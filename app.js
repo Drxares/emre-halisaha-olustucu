@@ -1,10 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA6xJCfrjk3RQ5vWAoDVBP5nhaDSLTw-F0",
   authDomain: "emre-tkmolustr.firebaseapp.com",
-  databaseURL: "https://emre-tkmolustr-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "emre-tkmolustr",
   storageBucket: "emre-tkmolustr.firebasestorage.app",
   messagingSenderId: "465918251433",
@@ -12,7 +19,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const db = getFirestore(app);
+const playersCollection = collection(db, "players");
 
 const playerForm = document.getElementById("playerForm");
 const playersList = document.getElementById("playersList");
@@ -36,17 +44,41 @@ let currentTeams = {
   bench: []
 };
 
-async function savePlayers() {
-  await set(ref(db, "players"), players);
+async function loadPlayers() {
+  const snapshot = await getDocs(playersCollection);
+
+  players = snapshot.docs
+    .map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }))
+    .filter(player => player.name && player.position);
 }
 
-async function loadPlayers() {
-  const snapshot = await get(ref(db, "players"));
-  if (snapshot.exists()) {
-    players = snapshot.val() || [];
-  } else {
-    players = [];
-  }
+async function saveNewPlayer(player) {
+  const docRef = await addDoc(playersCollection, player);
+  player.id = docRef.id;
+}
+
+async function updatePlayerInFirestore(index) {
+  const player = players[index];
+  if (!player?.id) return;
+
+  const { id, ...playerData } = player;
+  await updateDoc(doc(db, "players", id), playerData);
+}
+
+async function deletePlayerFromFirestore(index) {
+  const player = players[index];
+  if (!player?.id) return;
+
+  await deleteDoc(doc(db, "players", player.id));
+}
+
+async function deleteAllPlayersFromFirestore() {
+  const snapshot = await getDocs(playersCollection);
+  const deletions = snapshot.docs.map(docSnap => deleteDoc(doc(db, "players", docSnap.id)));
+  await Promise.all(deletions);
 }
 
 function getFormValues() {
@@ -80,14 +112,33 @@ function validatePlayer(player) {
   );
 }
 
-function normalizeOldPlayers() {
-  players = players.map(p => ({
-    active: p.active !== undefined ? p.active : true,
-    playingToday: p.playingToday !== undefined ? p.playingToday : true,
-    isBench: p.isBench !== undefined ? p.isBench : false,
-    ...p
-  }));
-  savePlayers();
+async function normalizeOldPlayers() {
+  let changed = false;
+
+  players = players.map(p => {
+    const normalized = {
+      active: p.active !== undefined ? p.active : true,
+      playingToday: p.playingToday !== undefined ? p.playingToday : true,
+      isBench: p.isBench !== undefined ? p.isBench : false,
+      ...p
+    };
+
+    if (
+      p.active === undefined ||
+      p.playingToday === undefined ||
+      p.isBench === undefined
+    ) {
+      changed = true;
+    }
+
+    return normalized;
+  });
+
+  if (changed) {
+    for (let i = 0; i < players.length; i++) {
+      await updatePlayerInFirestore(i);
+    }
+  }
 }
 
 function getPositionBadgeClass(position) {
@@ -179,28 +230,28 @@ function editPlayer(index) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function deletePlayer(index) {
+async function deletePlayer(index) {
+  await deletePlayerFromFirestore(index);
   players.splice(index, 1);
-  savePlayers();
   renderPlayers();
   clearResults();
 }
 
-function togglePlayerActive(index) {
+async function togglePlayerActive(index) {
   players[index].active = !players[index].active;
-  savePlayers();
+  await updatePlayerInFirestore(index);
   renderPlayers();
 }
 
-function togglePlayingToday(index) {
+async function togglePlayingToday(index) {
   players[index].playingToday = !players[index].playingToday;
-  savePlayers();
+  await updatePlayerInFirestore(index);
   renderPlayers();
 }
 
-function toggleBench(index) {
+async function toggleBench(index) {
   players[index].isBench = !players[index].isBench;
-  savePlayers();
+  await updatePlayerInFirestore(index);
   renderPlayers();
 }
 
@@ -591,7 +642,7 @@ function swapPlayersBetweenTeams(fromTeam, fromIndex, toTeam) {
   renderCurrentTeams();
 }
 
-playerForm.addEventListener("submit", function (e) {
+playerForm.addEventListener("submit", async function (e) {
   e.preventDefault();
 
   const player = getFormValues();
@@ -607,11 +658,12 @@ playerForm.addEventListener("submit", function (e) {
       ...players[editIndex],
       ...player
     };
+    await updatePlayerInFirestore(editIndex);
   } else {
     players.push(player);
+    await saveNewPlayer(players[players.length - 1]);
   }
 
-  savePlayers();
   renderPlayers();
   resetForm();
 });
@@ -620,12 +672,12 @@ cancelEditBtn.addEventListener("click", resetForm);
 
 generateTeamsBtn.addEventListener("click", generateTeams);
 
-clearPlayersBtn.addEventListener("click", function () {
+clearPlayersBtn.addEventListener("click", async function () {
   const ok = confirm("Tüm oyuncuları silmek istediğine emin misin?");
   if (!ok) return;
 
+  await deleteAllPlayersFromFirestore();
   players = [];
-  savePlayers();
   renderPlayers();
   clearResults();
   resetForm();
@@ -639,7 +691,7 @@ window.toggleBench = toggleBench;
 
 async function initApp() {
   await loadPlayers();
-  normalizeOldPlayers();
+  await normalizeOldPlayers();
   renderPlayers();
   clearResults();
 }
