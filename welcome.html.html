@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kayıt Ol</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div class="mobile-frame">
+      <header class="hero">
+        <div>
+          <h1>Halısaha Kayıt</h1>
+          <p>İsmini ekle, admin seni daha sonra yetkilendirsin.</p>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>Kayıt Ol</h2>
+        </div>
+
+        <form id="registerForm">
+          <div class="grid form-grid">
+            <div class="field">
+              <label for="firstName">İsim</label>
+              <input type="text" id="firstName" placeholder="Örn: Emre" required />
+            </div>
+
+            <div class="field">
+              <label for="lastName">Soyisim</label>
+              <input type="text" id="lastName" placeholder="Örn: Koç" required />
+            </div>
+          </div>
+
+          <div class="button-group top-space">
+            <button type="submit">Kayıt Ol</button>
+          </div>
+        </form>
+
+        <p id="registerMessage" class="empty-text" style="margin-top: 12px; display: none;"></p>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>Ana Sisteme Geç</h2>
+        </div>
+
+        <div class="button-group">
+          <a href="./index.html" style="text-decoration: none; width: 100%;">
+            <button type="button" style="width: 100%;">Takım Ekranına Git</button>
+          </a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="welcome.js"></script>
+</body>
+</html>
