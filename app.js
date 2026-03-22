@@ -663,9 +663,9 @@ playerForm.addEventListener("submit", async function (e) {
     };
     await updatePlayerInFirestore(editIndex);
   } else {
-    players.push(player);
-    await saveNewPlayer(players[players.length - 1]);
-  }
+  players.push(player);
+  await addDoc(playersCollection, player);
+}
 
   renderPlayers();
   resetForm();
