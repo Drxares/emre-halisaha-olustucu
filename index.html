@@ -1,169 +1,173 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Halısaha Takım Oluşturucu</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Halısaha Takım Oluşturucu</title>
+<link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <div class="app-shell">
-    <div class="mobile-frame">
-      <header class="hero">
-        <div>
-          <h1>Halısaha Takım</h1>
-          <p>Kadroyu oluştur, aktifleri seç, dengeli takımları çıkar.</p>
-        </div>
-      </header>
 
-      <section class="card">
-        <div class="section-head">
-          <h2>Oyuncu Ekle / Düzenle</h2>
-        </div>
+<div class="app-shell">
+<div class="mobile-frame">
 
-        <form id="playerForm">
-          <input type="hidden" id="editIndex" value="-1" />
+<header class="hero">
+<div>
+<h1>Halısaha Takım</h1>
+<p>Kadroyu oluştur, aktifleri seç, dengeli takımları çıkar.</p>
+</div>
+</header>
 
-          <div class="grid form-grid">
-            <div class="field">
-              <label for="name">Oyuncu adı</label>
-              <input type="text" id="name" placeholder="Örn: Emre" required />
-            </div>
+<section class="card">
+<div class="section-head">
+<h2>Oyuncu Ekle / Düzenle</h2>
+</div>
 
-            <div class="field">
-              <label for="position">Pozisyon</label>
-              <select id="position" required>
-                <option value="">Pozisyon seç</option>
-                <option value="Kaleci">Kaleci</option>
-                <option value="Defans">Defans</option>
-                <option value="Orta Saha">Orta Saha</option>
-                <option value="Forvet">Forvet</option>
-              </select>
-            </div>
+<form id="playerForm">
 
-            <div class="field">
-              <label for="overall">Genel güç</label>
-              <input type="number" id="overall" min="1" max="10" placeholder="1-10" required />
-            </div>
+<input type="hidden" id="editIndex" value="-1">
 
-            <div class="field">
-              <label for="shot">Şut</label>
-              <input type="number" id="shot" min="1" max="10" placeholder="1-10" required />
-            </div>
+<div class="grid form-grid">
 
-            <div class="field">
-              <label for="defense">Defans</label>
-              <input type="number" id="defense" min="1" max="10" placeholder="1-10" required />
-            </div>
+<div class="field">
+<label>Oyuncu adı</label>
+<input type="text" id="name" required>
+</div>
 
-            <div class="field">
-              <label for="pass">Pas</label>
-              <input type="number" id="pass" min="1" max="10" placeholder="1-10" required />
-            </div>
+<div class="field">
+<label>Pozisyon</label>
+<select id="position">
+<option value="">Pozisyon seç</option>
+<option value="Kaleci">Kaleci</option>
+<option value="Defans">Defans</option>
+<option value="Orta Saha">Orta Saha</option>
+<option value="Forvet">Forvet</option>
+</select>
+</div>
 
-            <div class="field">
-              <label for="speed">Hız</label>
-              <input type="number" id="speed" min="1" max="10" placeholder="1-10" required />
-            </div>
+<div class="field">
+<label>Genel güç</label>
+<input type="number" id="overall" min="1" max="10">
+</div>
 
-            <div class="field">
-              <label for="stamina">Dayanıklılık</label>
-              <input type="number" id="stamina" min="1" max="10" placeholder="1-10" required />
-            </div>
-          </div>
+<div class="field">
+<label>Şut</label>
+<input type="number" id="shot" min="1" max="10">
+</div>
 
-          <div class="button-group top-space">
-            <button type="submit" id="savePlayerBtn">Kaydet</button>
-            <button type="button" id="cancelEditBtn" class="secondary">İptal</button>
-          </div>
-        </form>
-      </section>
+<div class="field">
+<label>Defans</label>
+<input type="number" id="defense" min="1" max="10">
+</div>
 
-      <section class="card">
-        <div class="section-head">
-          <h2>Takım Ayarları</h2>
-          <span class="badge" id="activeCountBadge">0 aktif</span>
-        </div>
+<div class="field">
+<label>Pas</label>
+<input type="number" id="pass" min="1" max="10">
+</div>
 
-        <div class="grid settings-grid">
-          <div class="field">
-            <label for="teamSize">Takım başına oyuncu</label>
-            <input type="number" id="teamSize" min="1" placeholder="Örn: 5" />
-          </div>
+<div class="field">
+<label>Hız</label>
+<input type="number" id="speed" min="1" max="10">
+</div>
 
-          <div class="field">
-            <label for="balanceMode">Mod</label>
-            <select id="balanceMode">
-              <option value="balanced">Tam Dengeli</option>
-              <option value="semi-random">Yarı Rastgele</option>
-              <option value="random">Tam Rastgele</option>
-            </select>
-          </div>
+<div class="field">
+<label>Dayanıklılık</label>
+<input type="number" id="stamina" min="1" max="10">
+</div>
 
-          <label class="check-card">
-            <input type="checkbox" id="usePositionBalance" checked />
-            <span>Pozisyon dengesi</span>
-          </label>
+</div>
 
-          <label class="check-card">
-            <input type="checkbox" id="useGoalkeeperBalance" checked />
-            <span>Kaleci dengesi</span>
-          </label>
-        </div>
+<div class="button-group top-space">
+<button type="submit">Kaydet</button>
+</div>
 
-        <div class="button-group top-space">
-          <button id="generateTeamsBtn" type="button">Takımları Oluştur</button>
-          <button id="clearPlayersBtn" type="button" class="danger">Tümünü Sil</button>
-        </div>
-      </section>
+</form>
+</section>
 
-      <section class="card">
-        <div class="section-head">
-          <h2>Oyuncular</h2>
-          <span class="badge" id="playerCountBadge">0 oyuncu</span>
-        </div>
-        <div id="playersList"></div>
-      </section>
+<section class="card">
+<div class="section-head">
+<h2>Oyuncular</h2>
+</div>
 
-      <section class="card" id="resultsCard">
-        <div class="section-head">
-          <h2>Takımlar</h2>
-          <span class="badge" id="resultInfoBadge">Henüz oluşturulmadı</span>
-        </div>
+<div id="playersList"></div>
 
-        <div class="teams-wrapper">
-          <div class="pitch-card">
-            <div class="pitch-head">
-              <h3>Takım A</h3>
-              <div class="mini-score" id="teamATotal"></div>
-            </div>
-            <div class="pitch-zone" id="teamA"></div>
-          </div>
+</section>
 
-          <div class="pitch-card">
-            <div class="pitch-head">
-              <h3>Takım B</h3>
-              <div class="mini-score" id="teamBTotal"></div>
-            </div>
-            <div class="pitch-zone" id="teamB"></div>
-          </div>
-        </div>
+</div>
+</div>
 
-        <div class="bench-card">
-          <div class="bench-head">
-            <h3>Yedekler</h3>
-          </div>
-          <div id="benchList"></div>
-        </div>
 
-        <div class="meta-grid">
-          <div class="meta-box" id="teamAMeta"></div>
-          <div class="meta-box" id="teamBMeta"></div>
-        </div>
-      </section>
-    </div>
-  </div>
+<!-- FIREBASE -->
+<script type="module">
 
-  <script src="app.js"></script>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyA6xJCfrjk3RQ5vWAoDVBP5nhaDSTUw-F0",
+authDomain: "emre-tkmolustr.firebaseapp.com",
+projectId: "emre-tkmolustr",
+storageBucket: "emre-tkmolustr.firebasestorage.app",
+messagingSenderId: "465918251433",
+appId: "1:465918251433:web:41d61ae613b224353934b8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const form = document.getElementById("playerForm");
+const list = document.getElementById("playersList");
+
+
+async function loadPlayers(){
+
+list.innerHTML = "";
+
+const querySnapshot = await getDocs(collection(db,"players"));
+
+querySnapshot.forEach((doc)=>{
+
+const player = doc.data();
+
+const div = document.createElement("div");
+
+div.innerHTML = `
+<div class="player-card">
+<strong>${player.name}</strong>
+<span>${player.position}</span>
+</div>
+`;
+
+list.appendChild(div);
+
+});
+
+}
+
+
+form.addEventListener("submit", async (e)=>{
+
+e.preventDefault();
+
+const name = document.getElementById("name").value;
+const position = document.getElementById("position").value;
+
+await addDoc(collection(db,"players"),{
+name:name,
+position:position
+});
+
+form.reset();
+
+loadPlayers();
+
+});
+
+
+loadPlayers();
+
+</script>
+
 </body>
 </html>
