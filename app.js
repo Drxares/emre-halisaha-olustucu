@@ -1,5 +1,19 @@
-import { collection, addDoc, getDocs } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA6xJCfrjk3RQ5vWAoDVBP5nhaDSLTw-F0",
+  authDomain: "emre-tkmolustr.firebaseapp.com",
+  databaseURL: "https://emre-tkmolustr-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "emre-tkmolustr",
+  storageBucket: "emre-tkmolustr.firebasestorage.app",
+  messagingSenderId: "465918251433",
+  appId: "1:465918251433:web:41d61ae613b224353934b8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 const playerForm = document.getElementById("playerForm");
 const playersList = document.getElementById("playersList");
 const generateTeamsBtn = document.getElementById("generateTeamsBtn");
@@ -15,15 +29,24 @@ const teamAMetaEl = document.getElementById("teamAMeta");
 const teamBMetaEl = document.getElementById("teamBMeta");
 const resultInfoBadge = document.getElementById("resultInfoBadge");
 
-let players = JSON.parse(localStorage.getItem("players")) || [];
+let players = [];
 let currentTeams = {
   teamA: [],
   teamB: [],
   bench: []
 };
 
-function savePlayers() {
-  localStorage.setItem("players", JSON.stringify(players));
+async function savePlayers() {
+  await set(ref(db, "players"), players);
+}
+
+async function loadPlayers() {
+  const snapshot = await get(ref(db, "players"));
+  if (snapshot.exists()) {
+    players = snapshot.val() || [];
+  } else {
+    players = [];
+  }
 }
 
 function getFormValues() {
@@ -608,6 +631,17 @@ clearPlayersBtn.addEventListener("click", function () {
   resetForm();
 });
 
-normalizeOldPlayers();
-renderPlayers();
-clearResults();
+window.editPlayer = editPlayer;
+window.deletePlayer = deletePlayer;
+window.togglePlayerActive = togglePlayerActive;
+window.togglePlayingToday = togglePlayingToday;
+window.toggleBench = toggleBench;
+
+async function initApp() {
+  await loadPlayers();
+  normalizeOldPlayers();
+  renderPlayers();
+  clearResults();
+}
+
+initApp();
