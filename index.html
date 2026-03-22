@@ -1,723 +1,169 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyA6xJCfrjk3RQ5vWAoDVBP5nhaDSTUw-F0",
-  authDomain: "emre-tkmolustr.firebaseapp.com",
-  projectId: "emre-tkmolustr",
-  storageBucket: "emre-tkmolustr.firebasestorage.app",
-  messagingSenderId: "465918251433",
-  appId: "1:465918251433:web:41d61ae613b224353934b8"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const playerForm = document.getElementById("playerForm");
-const playersList = document.getElementById("playersList");
-const generateTeamsBtn = document.getElementById("generateTeamsBtn");
-const clearPlayersBtn = document.getElementById("clearPlayersBtn");
-const cancelEditBtn = document.getElementById("cancelEditBtn");
-
-const teamAEl = document.getElementById("teamA");
-const teamBEl = document.getElementById("teamB");
-const benchListEl = document.getElementById("benchList");
-const teamATotalEl = document.getElementById("teamATotal");
-const teamBTotalEl = document.getElementById("teamBTotal");
-const teamAMetaEl = document.getElementById("teamAMeta");
-const teamBMetaEl = document.getElementById("teamBMeta");
-const resultInfoBadge = document.getElementById("resultInfoBadge");
-
-let players = [];
-let currentTeams = {
-  teamA: [],
-  teamB: [],
-  bench: []
-};
-
-function getPlayersCollection() {
-  return collection(db, "players");
-}
-
-async function loadPlayers() {
-  try {
-    const snapshot = await getDocs(getPlayersCollection());
-
-    players = snapshot.docs.map((snap) => {
-      const data = snap.data();
-      return {
-        id: snap.id,
-        name: data.name || "",
-        position: data.position || "",
-        overall: Number(data.overall || 1),
-        shot: Number(data.shot || 1),
-        defense: Number(data.defense || 1),
-        pass: Number(data.pass || 1),
-        speed: Number(data.speed || 1),
-        stamina: Number(data.stamina || 1),
-        active: data.active !== undefined ? data.active : true,
-        playingToday: data.playingToday !== undefined ? data.playingToday : true,
-        isBench: data.isBench !== undefined ? data.isBench : false,
-        createdAt: Number(data.createdAt || Date.now())
-      };
-    });
-
-    players.sort((a, b) => a.createdAt - b.createdAt);
-
-    renderPlayers();
-    clearResults();
-  } catch (error) {
-    console.error("Oyuncular yüklenemedi:", error);
-    alert("Oyuncular yüklenirken hata oluştu.");
-  }
-}
-
-function getFormValues() {
-  return {
-    name: document.getElementById("name").value.trim(),
-    position: document.getElementById("position").value,
-    overall: Number(document.getElementById("overall").value),
-    shot: Number(document.getElementById("shot").value),
-    defense: Number(document.getElementById("defense").value),
-    pass: Number(document.getElementById("pass").value),
-    speed: Number(document.getElementById("speed").value),
-    stamina: Number(document.getElementById("stamina").value),
-    active: true,
-    playingToday: true,
-    isBench: false
-  };
-}
-
-function resetForm() {
-  playerForm.reset();
-  document.getElementById("editIndex").value = -1;
-  document.getElementById("savePlayerBtn").textContent = "Kaydet";
-}
-
-function validatePlayer(player) {
-  return (
-    player.name &&
-    player.position &&
-    [player.overall, player.shot, player.defense, player.pass, player.speed, player.stamina]
-      .every(v => v >= 1 && v <= 10)
-  );
-}
-
-function getPositionBadgeClass(position) {
-  if (position === "Kaleci") return "badge-kaleci";
-  if (position === "Defans") return "badge-defans";
-  if (position === "Orta Saha") return "badge-orta-saha";
-  return "badge-forvet";
-}
-
-function renderPlayers() {
-  const playerCountBadge = document.getElementById("playerCountBadge");
-  const activeCountBadge = document.getElementById("activeCountBadge");
-
-  const activeCount = players.filter(p => p.active && p.playingToday && !p.isBench).length;
-
-  if (playerCountBadge) playerCountBadge.textContent = `${players.length} oyuncu`;
-  if (activeCountBadge) activeCountBadge.textContent = `${activeCount} aktif`;
-
-  if (players.length === 0) {
-    playersList.innerHTML = `<p class="empty-text">Henüz oyuncu eklenmedi.</p>`;
-    return;
-  }
-
-  playersList.innerHTML = players.map((player, index) => `
-    <div class="player-item">
-      <div class="player-top">
-        <div class="player-left">
-          <div class="player-name">${player.name}</div>
-          <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Halısaha Takım Oluşturucu</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div class="mobile-frame">
+      <header class="hero">
+        <div>
+          <h1>Halısaha Takım</h1>
+          <p>Kadroyu oluştur, aktifleri seç, dengeli takımları çıkar.</p>
         </div>
-      </div>
+      </header>
 
-      <div class="player-flags">
-        <span class="flag-pill ${player.active ? 'flag-active' : 'flag-passive'}">
-          ${player.active ? 'Aktif' : 'Pasif'}
-        </span>
-        <span class="flag-pill ${player.playingToday ? 'flag-active' : 'flag-passive'}">
-          ${player.playingToday ? 'Bugün Oynuyor' : 'Bugün Yok'}
-        </span>
-        ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
-      </div>
+      <section class="card">
+        <div class="section-head">
+          <h2>Oyuncu Ekle / Düzenle</h2>
+        </div>
 
-      <div class="player-stats">
-        Genel: ${player.overall} |
-        Şut: ${player.shot} |
-        Defans: ${player.defense} |
-        Pas: ${player.pass} |
-        Hız: ${player.speed} |
-        Dayanıklılık: ${player.stamina}
-      </div>
+        <form id="playerForm">
+          <input type="hidden" id="editIndex" value="-1" />
 
-      <div class="player-controls">
-        <label class="toggle-box">
-          <input type="checkbox" ${player.active ? "checked" : ""} onchange="togglePlayerActive(${index})" />
-          <span>Aktif</span>
-        </label>
+          <div class="grid form-grid">
+            <div class="field">
+              <label for="name">Oyuncu adı</label>
+              <input type="text" id="name" placeholder="Örn: Emre" required />
+            </div>
 
-        <label class="toggle-box">
-          <input type="checkbox" ${player.playingToday ? "checked" : ""} onchange="togglePlayingToday(${index})" />
-          <span>Bugün Var</span>
-        </label>
+            <div class="field">
+              <label for="position">Pozisyon</label>
+              <select id="position" required>
+                <option value="">Pozisyon seç</option>
+                <option value="Kaleci">Kaleci</option>
+                <option value="Defans">Defans</option>
+                <option value="Orta Saha">Orta Saha</option>
+                <option value="Forvet">Forvet</option>
+              </select>
+            </div>
 
-        <label class="toggle-box">
-          <input type="checkbox" ${player.isBench ? "checked" : ""} onchange="toggleBench(${index})" />
-          <span>Yedek</span>
-        </label>
-      </div>
+            <div class="field">
+              <label for="overall">Genel güç</label>
+              <input type="number" id="overall" min="1" max="10" placeholder="1-10" required />
+            </div>
 
-      <div class="player-actions">
-        <button class="edit-btn" onclick="editPlayer(${index})">Düzenle</button>
-        <button class="player-delete-btn" onclick="deletePlayer(${index})">Sil</button>
-      </div>
+            <div class="field">
+              <label for="shot">Şut</label>
+              <input type="number" id="shot" min="1" max="10" placeholder="1-10" required />
+            </div>
+
+            <div class="field">
+              <label for="defense">Defans</label>
+              <input type="number" id="defense" min="1" max="10" placeholder="1-10" required />
+            </div>
+
+            <div class="field">
+              <label for="pass">Pas</label>
+              <input type="number" id="pass" min="1" max="10" placeholder="1-10" required />
+            </div>
+
+            <div class="field">
+              <label for="speed">Hız</label>
+              <input type="number" id="speed" min="1" max="10" placeholder="1-10" required />
+            </div>
+
+            <div class="field">
+              <label for="stamina">Dayanıklılık</label>
+              <input type="number" id="stamina" min="1" max="10" placeholder="1-10" required />
+            </div>
+          </div>
+
+          <div class="button-group top-space">
+            <button type="submit" id="savePlayerBtn">Kaydet</button>
+            <button type="button" id="cancelEditBtn" class="secondary">İptal</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>Takım Ayarları</h2>
+          <span class="badge" id="activeCountBadge">0 aktif</span>
+        </div>
+
+        <div class="grid settings-grid">
+          <div class="field">
+            <label for="teamSize">Takım başına oyuncu</label>
+            <input type="number" id="teamSize" min="1" placeholder="Örn: 5" />
+          </div>
+
+          <div class="field">
+            <label for="balanceMode">Mod</label>
+            <select id="balanceMode">
+              <option value="balanced">Tam Dengeli</option>
+              <option value="semi-random">Yarı Rastgele</option>
+              <option value="random">Tam Rastgele</option>
+            </select>
+          </div>
+
+          <label class="check-card">
+            <input type="checkbox" id="usePositionBalance" checked />
+            <span>Pozisyon dengesi</span>
+          </label>
+
+          <label class="check-card">
+            <input type="checkbox" id="useGoalkeeperBalance" checked />
+            <span>Kaleci dengesi</span>
+          </label>
+        </div>
+
+        <div class="button-group top-space">
+          <button id="generateTeamsBtn" type="button">Takımları Oluştur</button>
+          <button id="clearPlayersBtn" type="button" class="danger">Tümünü Sil</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>Oyuncular</h2>
+          <span class="badge" id="playerCountBadge">0 oyuncu</span>
+        </div>
+        <div id="playersList"></div>
+      </section>
+
+      <section class="card" id="resultsCard">
+        <div class="section-head">
+          <h2>Takımlar</h2>
+          <span class="badge" id="resultInfoBadge">Henüz oluşturulmadı</span>
+        </div>
+
+        <div class="teams-wrapper">
+          <div class="pitch-card">
+            <div class="pitch-head">
+              <h3>Takım A</h3>
+              <div class="mini-score" id="teamATotal"></div>
+            </div>
+            <div class="pitch-zone" id="teamA"></div>
+          </div>
+
+          <div class="pitch-card">
+            <div class="pitch-head">
+              <h3>Takım B</h3>
+              <div class="mini-score" id="teamBTotal"></div>
+            </div>
+            <div class="pitch-zone" id="teamB"></div>
+          </div>
+        </div>
+
+        <div class="bench-card">
+          <div class="bench-head">
+            <h3>Yedekler</h3>
+          </div>
+          <div id="benchList"></div>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-box" id="teamAMeta"></div>
+          <div class="meta-box" id="teamBMeta"></div>
+        </div>
+      </section>
     </div>
-  `).join("");
-}
-
-function editPlayer(index) {
-  const p = players[index];
-  document.getElementById("name").value = p.name;
-  document.getElementById("position").value = p.position;
-  document.getElementById("overall").value = p.overall;
-  document.getElementById("shot").value = p.shot;
-  document.getElementById("defense").value = p.defense;
-  document.getElementById("pass").value = p.pass;
-  document.getElementById("speed").value = p.speed;
-  document.getElementById("stamina").value = p.stamina;
-  document.getElementById("editIndex").value = index;
-  document.getElementById("savePlayerBtn").textContent = "Güncelle";
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-async function deletePlayer(index) {
-  try {
-    const player = players[index];
-    if (!player?.id) return;
-
-    await deleteDoc(doc(db, "players", player.id));
-    players.splice(index, 1);
-    renderPlayers();
-    clearResults();
-  } catch (error) {
-    console.error("Oyuncu silinemedi:", error);
-    alert("Oyuncu silinirken hata oluştu.");
-  }
-}
-
-async function togglePlayerActive(index) {
-  try {
-    const player = players[index];
-    player.active = !player.active;
-
-    await updateDoc(doc(db, "players", player.id), {
-      active: player.active
-    });
-
-    renderPlayers();
-  } catch (error) {
-    console.error("Aktif durumu güncellenemedi:", error);
-    alert("Aktif durumu güncellenemedi.");
-  }
-}
-
-async function togglePlayingToday(index) {
-  try {
-    const player = players[index];
-    player.playingToday = !player.playingToday;
-
-    await updateDoc(doc(db, "players", player.id), {
-      playingToday: player.playingToday
-    });
-
-    renderPlayers();
-  } catch (error) {
-    console.error("Bugün var durumu güncellenemedi:", error);
-    alert("Bugün var durumu güncellenemedi.");
-  }
-}
-
-async function toggleBench(index) {
-  try {
-    const player = players[index];
-    player.isBench = !player.isBench;
-
-    await updateDoc(doc(db, "players", player.id), {
-      isBench: player.isBench
-    });
-
-    renderPlayers();
-  } catch (error) {
-    console.error("Yedek durumu güncellenemedi:", error);
-    alert("Yedek durumu güncellenemedi.");
-  }
-}
-
-function calculatePlayerScore(player) {
-  return (
-    player.overall * 3 +
-    player.shot * 2 +
-    player.defense * 2 +
-    player.pass * 1.5 +
-    player.speed * 1.5 +
-    player.stamina * 1
-  );
-}
-
-function calculateAttackScore(player) {
-  return player.shot * 3 + player.speed * 2 + player.pass * 1 + player.overall * 1;
-}
-
-function calculateDefenseScore(player) {
-  return player.defense * 3 + player.stamina * 2 + player.overall * 1;
-}
-
-function getTeamStats(team) {
-  const total = team.reduce((sum, p) => sum + calculatePlayerScore(p), 0);
-  const attack = team.reduce((sum, p) => sum + calculateAttackScore(p), 0);
-  const defense = team.reduce((sum, p) => sum + calculateDefenseScore(p), 0);
-
-  const positions = {
-    Kaleci: team.filter(p => p.position === "Kaleci").length,
-    Defans: team.filter(p => p.position === "Defans").length,
-    "Orta Saha": team.filter(p => p.position === "Orta Saha").length,
-    Forvet: team.filter(p => p.position === "Forvet").length,
-  };
-
-  return { total, attack, defense, positions };
-}
-
-function shuffleArray(arr) {
-  const clone = [...arr];
-  for (let i = clone.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [clone[i], clone[j]] = [clone[j], clone[i]];
-  }
-  return clone;
-}
-
-function getPositionDifferencePenalty(teamA, teamB) {
-  const positions = ["Kaleci", "Defans", "Orta Saha", "Forvet"];
-  let penalty = 0;
-
-  for (const pos of positions) {
-    const a = teamA.filter(p => p.position === pos).length;
-    const b = teamB.filter(p => p.position === pos).length;
-    penalty += Math.abs(a - b) * 20;
-  }
-
-  return penalty;
-}
-
-function getGoalkeeperPenalty(teamA, teamB) {
-  const gkA = teamA.filter(p => p.position === "Kaleci").length;
-  const gkB = teamB.filter(p => p.position === "Kaleci").length;
-  return Math.abs(gkA - gkB) * 40;
-}
-
-function evaluateTeams(teamA, teamB, usePositionBalance, useGoalkeeperBalance) {
-  const statsA = getTeamStats(teamA);
-  const statsB = getTeamStats(teamB);
-
-  let diff = 0;
-  diff += Math.abs(statsA.total - statsB.total);
-  diff += Math.abs(statsA.attack - statsB.attack) * 0.7;
-  diff += Math.abs(statsA.defense - statsB.defense) * 0.7;
-
-  if (usePositionBalance) diff += getPositionDifferencePenalty(teamA, teamB);
-  if (useGoalkeeperBalance) diff += getGoalkeeperPenalty(teamA, teamB);
-
-  return {
-    score: diff,
-    statsA,
-    statsB
-  };
-}
-
-function distributeBalanced(pool, teamSize) {
-  const sorted = [...pool].sort((a, b) => calculatePlayerScore(b) - calculatePlayerScore(a));
-  const teamA = [];
-  const teamB = [];
-  let scoreA = 0;
-  let scoreB = 0;
-
-  for (const player of sorted) {
-    if (teamA.length >= teamSize) {
-      teamB.push(player);
-      scoreB += calculatePlayerScore(player);
-      continue;
-    }
-
-    if (teamB.length >= teamSize) {
-      teamA.push(player);
-      scoreA += calculatePlayerScore(player);
-      continue;
-    }
-
-    if (scoreA <= scoreB) {
-      teamA.push(player);
-      scoreA += calculatePlayerScore(player);
-    } else {
-      teamB.push(player);
-      scoreB += calculatePlayerScore(player);
-    }
-  }
-
-  return { teamA, teamB };
-}
-
-function distributeRandom(pool, teamSize) {
-  const shuffled = shuffleArray(pool);
-  return {
-    teamA: shuffled.slice(0, teamSize),
-    teamB: shuffled.slice(teamSize, teamSize * 2)
-  };
-}
-
-function distributeSemiRandom(pool, teamSize) {
-  const sorted = [...pool].sort((a, b) => calculatePlayerScore(b) - calculatePlayerScore(a));
-  const chunks = [];
-
-  for (let i = 0; i < sorted.length; i += 2) {
-    chunks.push(sorted.slice(i, i + 2));
-  }
-
-  const randomized = chunks.flatMap(chunk => shuffleArray(chunk));
-  const teamA = [];
-  const teamB = [];
-  let scoreA = 0;
-  let scoreB = 0;
-
-  for (const player of randomized) {
-    if (teamA.length >= teamSize) {
-      teamB.push(player);
-      scoreB += calculatePlayerScore(player);
-      continue;
-    }
-
-    if (teamB.length >= teamSize) {
-      teamA.push(player);
-      scoreA += calculatePlayerScore(player);
-      continue;
-    }
-
-    if (scoreA <= scoreB) {
-      teamA.push(player);
-      scoreA += calculatePlayerScore(player);
-    } else {
-      teamB.push(player);
-      scoreB += calculatePlayerScore(player);
-    }
-  }
-
-  return { teamA, teamB };
-}
-
-function getEligiblePlayers() {
-  return players.filter(p => p.active && p.playingToday && !p.isBench);
-}
-
-function getBenchPlayers() {
-  return players.filter(p => p.active && p.playingToday && p.isBench);
-}
-
-function generateBestTeams(pool, teamSize, balanceMode, usePositionBalance, useGoalkeeperBalance) {
-  let best = null;
-
-  for (let i = 0; i < 300; i++) {
-    const shuffledPool = shuffleArray(pool);
-    let teams;
-
-    if (balanceMode === "random") {
-      teams = distributeRandom(shuffledPool, teamSize);
-    } else if (balanceMode === "semi-random") {
-      teams = distributeSemiRandom(shuffledPool, teamSize);
-    } else {
-      teams = distributeBalanced(shuffledPool, teamSize);
-    }
-
-    const evaluation = evaluateTeams(
-      teams.teamA,
-      teams.teamB,
-      usePositionBalance,
-      useGoalkeeperBalance
-    );
-
-    const result = { teamA: teams.teamA, teamB: teams.teamB, evaluation };
-
-    if (!best || result.evaluation.score < best.evaluation.score) {
-      best = result;
-    }
-  }
-
-  return best;
-}
-
-function renderSingleTeam(team, target, teamKey) {
-  if (!team.length) {
-    target.innerHTML = `<p class="empty-text">Takım boş.</p>`;
-    return;
-  }
-
-  target.innerHTML = team.map((player, index) => `
-    <div class="team-player" draggable="true"
-      data-team="${teamKey}"
-      data-index="${index}">
-      <div class="team-player-head">
-        <div class="team-player-name">${player.name}</div>
-        <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
-      </div>
-      <div class="team-player-stats">
-        Genel: ${player.overall} | Şut: ${player.shot} | Defans: ${player.defense}<br>
-        Pas: ${player.pass} | Hız: ${player.speed} | Dayanıklılık: ${player.stamina}
-      </div>
-    </div>
-  `).join("");
-
-  attachDragEvents();
-}
-
-function renderBench(bench) {
-  if (!bench.length) {
-    benchListEl.innerHTML = `<p class="empty-text">Yedek oyuncu yok.</p>`;
-    return;
-  }
-
-  benchListEl.innerHTML = bench.map(player => `
-    <div class="bench-player">
-      <strong>${player.name}</strong><br>
-      <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
-    </div>
-  `).join("");
-}
-
-function renderTeamMetas() {
-  const statsA = getTeamStats(currentTeams.teamA);
-  const statsB = getTeamStats(currentTeams.teamB);
-
-  teamATotalEl.textContent = `Puan ${statsA.total.toFixed(1)}`;
-  teamBTotalEl.textContent = `Puan ${statsB.total.toFixed(1)}`;
-
-  teamAMetaEl.innerHTML = `
-    Takım A Toplam: ${statsA.total.toFixed(1)}<br>
-    Hücum: ${statsA.attack.toFixed(1)}<br>
-    Defans: ${statsA.defense.toFixed(1)}<br>
-    Kaleci: ${statsA.positions["Kaleci"]} | Defans: ${statsA.positions["Defans"]} |
-    Orta Saha: ${statsA.positions["Orta Saha"]} | Forvet: ${statsA.positions["Forvet"]}
-  `;
-
-  teamBMetaEl.innerHTML = `
-    Takım B Toplam: ${statsB.total.toFixed(1)}<br>
-    Hücum: ${statsB.attack.toFixed(1)}<br>
-    Defans: ${statsB.defense.toFixed(1)}<br>
-    Kaleci: ${statsB.positions["Kaleci"]} | Defans: ${statsB.positions["Defans"]} |
-    Orta Saha: ${statsB.positions["Orta Saha"]} | Forvet: ${statsB.positions["Forvet"]}
-  `;
-
-  const diff = Math.abs(statsA.total - statsB.total).toFixed(1);
-  resultInfoBadge.textContent = `Fark ${diff}`;
-}
-
-function renderCurrentTeams() {
-  renderSingleTeam(currentTeams.teamA, teamAEl, "A");
-  renderSingleTeam(currentTeams.teamB, teamBEl, "B");
-  renderBench(currentTeams.bench);
-  renderTeamMetas();
-}
-
-function clearResults() {
-  teamAEl.innerHTML = `<p class="empty-text">Takım henüz oluşturulmadı.</p>`;
-  teamBEl.innerHTML = `<p class="empty-text">Takım henüz oluşturulmadı.</p>`;
-  benchListEl.innerHTML = `<p class="empty-text">Yedek oyuncu yok.</p>`;
-  teamATotalEl.textContent = "";
-  teamBTotalEl.textContent = "";
-  teamAMetaEl.textContent = "";
-  teamBMetaEl.textContent = "";
-  resultInfoBadge.textContent = "Henüz oluşturulmadı";
-  currentTeams = { teamA: [], teamB: [], bench: [] };
-}
-
-function generateTeams() {
-  const eligiblePlayers = getEligiblePlayers();
-  const benchPlayers = getBenchPlayers();
-
-  if (eligiblePlayers.length < 2) {
-    alert("Takım kurmak için yeterli aktif oyuncu yok.");
-    return;
-  }
-
-  const teamSizeInput = Number(document.getElementById("teamSize").value);
-  const balanceMode = document.getElementById("balanceMode").value;
-  const usePositionBalance = document.getElementById("usePositionBalance").checked;
-  const useGoalkeeperBalance = document.getElementById("useGoalkeeperBalance").checked;
-
-  let teamSize = teamSizeInput && teamSizeInput > 0
-    ? teamSizeInput
-    : Math.floor(eligiblePlayers.length / 2);
-
-  if (eligiblePlayers.length < teamSize * 2) {
-    alert(`Bu ayarla takım kurmak için en az ${teamSize * 2} aktif oyuncu lazım.`);
-    return;
-  }
-
-  const pool = eligiblePlayers.slice(0, teamSize * 2);
-  const extraBench = eligiblePlayers.slice(teamSize * 2);
-  const fullBench = [...benchPlayers, ...extraBench];
-
-  const best = generateBestTeams(
-    pool,
-    teamSize,
-    balanceMode,
-    usePositionBalance,
-    useGoalkeeperBalance
-  );
-
-  currentTeams = {
-    teamA: [...best.teamA],
-    teamB: [...best.teamB],
-    bench: [...fullBench]
-  };
-
-  renderCurrentTeams();
-}
-
-function attachDragEvents() {
-  const draggablePlayers = document.querySelectorAll(".team-player");
-  const dropZones = [teamAEl, teamBEl];
-
-  draggablePlayers.forEach(el => {
-    el.addEventListener("dragstart", () => {
-      el.classList.add("dragging");
-    });
-
-    el.addEventListener("dragend", () => {
-      el.classList.remove("dragging");
-    });
-  });
-
-  dropZones.forEach(zone => {
-    zone.addEventListener("dragover", e => {
-      e.preventDefault();
-      zone.classList.add("drop-hover");
-    });
-
-    zone.addEventListener("dragleave", () => {
-      zone.classList.remove("drop-hover");
-    });
-
-    zone.addEventListener("drop", e => {
-      e.preventDefault();
-      zone.classList.remove("drop-hover");
-
-      const dragged = document.querySelector(".team-player.dragging");
-      if (!dragged) return;
-
-      const fromTeam = dragged.dataset.team;
-      const fromIndex = Number(dragged.dataset.index);
-      const toTeam = zone.id === "teamA" ? "A" : "B";
-
-      if (fromTeam === toTeam) return;
-
-      swapPlayersBetweenTeams(fromTeam, fromIndex, toTeam);
-    });
-  });
-}
-
-function swapPlayersBetweenTeams(fromTeam, fromIndex, toTeam) {
-  const source = fromTeam === "A" ? currentTeams.teamA : currentTeams.teamB;
-  const target = toTeam === "A" ? currentTeams.teamA : currentTeams.teamB;
-
-  if (!source.length || !target.length) return;
-
-  const movedPlayer = source[fromIndex];
-  if (!movedPlayer) return;
-
-  const targetIndex = target.length - 1;
-  const temp = target[targetIndex];
-  target[targetIndex] = movedPlayer;
-  source[fromIndex] = temp;
-
-  renderCurrentTeams();
-}
-
-playerForm.addEventListener("submit", async function (e) {
-  e.preventDefault();
-
-  const player = getFormValues();
-  if (!validatePlayer(player)) {
-    alert("Lütfen tüm alanları doğru doldur.");
-    return;
-  }
-
-  const editIndex = Number(document.getElementById("editIndex").value);
-
-  try {
-    if (editIndex >= 0) {
-      const oldPlayer = players[editIndex];
-
-      await updateDoc(doc(db, "players", oldPlayer.id), {
-        name: player.name,
-        position: player.position,
-        overall: player.overall,
-        shot: player.shot,
-        defense: player.defense,
-        pass: player.pass,
-        speed: player.speed,
-        stamina: player.stamina,
-        active: oldPlayer.active,
-        playingToday: oldPlayer.playingToday,
-        isBench: oldPlayer.isBench
-      });
-    } else {
-      await addDoc(getPlayersCollection(), {
-        ...player,
-        createdAt: Date.now()
-      });
-    }
-
-    resetForm();
-    await loadPlayers();
-  } catch (error) {
-    console.error("Oyuncu kaydedilemedi:", error);
-    alert("Oyuncu kaydedilirken hata oluştu.");
-  }
-});
-
-cancelEditBtn.addEventListener("click", resetForm);
-
-generateTeamsBtn.addEventListener("click", generateTeams);
-
-clearPlayersBtn.addEventListener("click", async function () {
-  const ok = confirm("Tüm oyuncuları silmek istediğine emin misin?");
-  if (!ok) return;
-
-  try {
-    const deleting = players.map(player => deleteDoc(doc(db, "players", player.id)));
-    await Promise.all(deleting);
-    players = [];
-    renderPlayers();
-    clearResults();
-    resetForm();
-  } catch (error) {
-    console.error("Tüm oyuncular silinemedi:", error);
-    alert("Tüm oyuncular silinirken hata oluştu.");
-  }
-});
-
-window.editPlayer = editPlayer;
-window.deletePlayer = deletePlayer;
-window.togglePlayerActive = togglePlayerActive;
-window.togglePlayingToday = togglePlayingToday;
-window.toggleBench = toggleBench;
-
-loadPlayers();
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
