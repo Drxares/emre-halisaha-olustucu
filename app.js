@@ -1,3 +1,5 @@
+import { collection, addDoc, getDocs } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const playerForm = document.getElementById("playerForm");
 const playersList = document.getElementById("playersList");
 const generateTeamsBtn = document.getElementById("generateTeamsBtn");
