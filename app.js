@@ -9,9 +9,6 @@ import {
   doc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-console.log("FIRESTORE APP CALISTI");
-
-
 const firebaseConfig = {
   apiKey: "AIzaSyA6xJCfrjk3RQ5vWAoDVBP5nhaDSLTw-F0",
   authDomain: "emre-tkmolustr.firebaseapp.com",
@@ -175,11 +172,11 @@ function renderPlayers() {
       </div>
 
       <div class="player-flags">
-        <span class="flag-pill ${player.active ? 'flag-active' : 'flag-passive'}">
-          ${player.active ? 'Aktif' : 'Pasif'}
+        <span class="flag-pill ${player.active ? "flag-active" : "flag-passive"}">
+          ${player.active ? "Aktif" : "Pasif"}
         </span>
-        <span class="flag-pill ${player.playingToday ? 'flag-active' : 'flag-passive'}">
-          ${player.playingToday ? 'Bugün Oynuyor' : 'Bugün Yok'}
+        <span class="flag-pill ${player.playingToday ? "flag-active" : "flag-passive"}">
+          ${player.playingToday ? "Bugün Oynuyor" : "Bugün Yok"}
         </span>
         ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
       </div>
@@ -659,13 +656,17 @@ playerForm.addEventListener("submit", async function (e) {
   if (editIndex >= 0) {
     players[editIndex] = {
       ...players[editIndex],
-      ...player
+      ...player,
+      active: players[editIndex].active,
+      playingToday: players[editIndex].playingToday,
+      isBench: players[editIndex].isBench
     };
     await updatePlayerInFirestore(editIndex);
   } else {
-  players.push(player);
-  await addDoc(playersCollection, player);
-}
+    const newPlayer = { ...player };
+    players.push(newPlayer);
+    await saveNewPlayer(newPlayer);
+  }
 
   renderPlayers();
   resetForm();
