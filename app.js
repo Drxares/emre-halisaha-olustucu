@@ -1,4 +1,3 @@
-console.log("FIRESTORE APP CALISTI");
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -9,6 +8,9 @@ import {
   deleteDoc,
   doc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+console.log("FIRESTORE APP CALISTI");
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyA6xJCfrjk3RQ5vWAoDVBP5nhaDSLTw-F0",
