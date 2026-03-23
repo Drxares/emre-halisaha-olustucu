@@ -225,10 +225,7 @@ async function registerNewAccount(firstName, lastName, password) {
   const fullName = `${cleanFirstName} ${cleanLastName}`;
   const email = buildHiddenEmail(cleanFirstName, cleanLastName);
 
-  const sameNameQuery = query(
-    usersCollection,
-    where("email", "==", email)
-  );
+  const sameNameQuery = query(usersCollection, where("email", "==", email));
   const sameNameSnap = await getDocs(sameNameQuery);
 
   if (!sameNameSnap.empty) {
@@ -320,7 +317,6 @@ function updateVisibilityByRole() {
 
   adminUsersCard.style.display = admin ? "block" : "none";
   playerFormCard.style.display = editor ? "block" : "none";
-
   clearPlayersBtn.style.display = admin ? "inline-flex" : "none";
 
   sessionInfo.innerHTML = `
@@ -487,10 +483,7 @@ function renderPlayers() {
   const playerCountBadge = document.getElementById("playerCountBadge");
   const activeCountBadge = document.getElementById("activeCountBadge");
 
-  const visiblePlayers = isAdmin() || canEditRatings()
-    ? players
-    : players.filter(p => p.ownerUid === currentAuthUser?.uid);
-
+  const visiblePlayers = players;
   const activeCount = visiblePlayers.filter(p => p.active && p.playingToday && !p.isBench).length;
 
   if (playerCountBadge) playerCountBadge.textContent = `${visiblePlayers.length} oyuncu`;
@@ -520,11 +513,11 @@ function renderPlayers() {
         </div>
 
         <div class="player-flags">
-          <span class="flag-pill ${player.active ? 'flag-active' : 'flag-passive'}">
-            ${player.active ? 'Aktif' : 'Pasif'}
+          <span class="flag-pill ${player.active ? "flag-active" : "flag-passive"}">
+            ${player.active ? "Aktif" : "Pasif"}
           </span>
-          <span class="flag-pill ${player.playingToday ? 'flag-active' : 'flag-passive'}">
-            ${player.playingToday ? 'Bugün Oynuyor' : 'Bugün Yok'}
+          <span class="flag-pill ${player.playingToday ? "flag-active" : "flag-passive"}">
+            ${player.playingToday ? "Bugün Oynuyor" : "Bugün Yok"}
           </span>
           ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
         </div>
@@ -648,7 +641,7 @@ function getTeamStats(team) {
     Kaleci: team.filter(p => p.position === "Kaleci").length,
     Defans: team.filter(p => p.position === "Defans").length,
     "Orta Saha": team.filter(p => p.position === "Orta Saha").length,
-    Forvet: team.filter(p => p.position === "Forvet").length,
+    Forvet: team.filter(p => p.position === "Forvet").length
   };
 
   return { total, attack, defense, positions };
@@ -781,19 +774,11 @@ function distributeSemiRandom(pool, teamSize) {
 }
 
 function getEligiblePlayers() {
-  const visiblePlayers = isAdmin() || canEditRatings()
-    ? players
-    : players.filter(p => p.ownerUid === currentAuthUser?.uid);
-
-  return visiblePlayers.filter(p => p.active && p.playingToday && !p.isBench);
+  return players.filter(p => p.active && p.playingToday && !p.isBench);
 }
 
 function getBenchPlayers() {
-  const visiblePlayers = isAdmin() || canEditRatings()
-    ? players
-    : players.filter(p => p.ownerUid === currentAuthUser?.uid);
-
-  return visiblePlayers.filter(p => p.active && p.playingToday && p.isBench);
+  return players.filter(p => p.active && p.playingToday && p.isBench);
 }
 
 function generateBestTeams(pool, teamSize, balanceMode, usePositionBalance, useGoalkeeperBalance) {
