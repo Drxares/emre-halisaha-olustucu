@@ -245,6 +245,7 @@ loginForm.addEventListener("submit", async (e) => {
 });
 
 registerForm.addEventListener("submit", async (e) => {
+  console.log("REGISTER SUBMIT CALISTI");
   e.preventDefault();
   hideAuthMessage();
 
