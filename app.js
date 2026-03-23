@@ -21,8 +21,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA6xJCfrjk3RQ5vWAoDVBP5nhaDSLTw-F0",
+  apiKey: "AIzaSyA6xJCfrjk3RQ5vWAoDVBP5nhaDSlTw-F0",
   authDomain: "emre-tkmolustr.firebaseapp.com",
+  databaseURL: "https://emre-tkmolustr-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "emre-tkmolustr",
   storageBucket: "emre-tkmolustr.firebasestorage.app",
   messagingSenderId: "465918251433",
