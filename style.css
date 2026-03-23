@@ -559,39 +559,3 @@ button.edit-btn:hover {
     width: 100%;
   }
 }
-
-.player-avatar {
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
-}
-
-.player-avatar-img,
-.player-avatar-placeholder {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  object-fit: cover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.player-avatar-img {
-  border: 2px solid #dbeafe;
-  background: #fff;
-}
-
-.player-avatar-placeholder {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #fff;
-  font-weight: 800;
-  font-size: 20px;
-}
-
-.player-main-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
