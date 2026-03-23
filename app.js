@@ -405,15 +405,36 @@ async function deleteAllPlayersFromFirestore() {
 }
 
 function getFormValues() {
+  const shot = Math.min(99, Math.max(1, Number(document.getElementById("shot").value)));
+  const defense = Math.min(99, Math.max(1, Number(document.getElementById("defense").value)));
+  const pass = Math.min(99, Math.max(1, Number(document.getElementById("pass").value)));
+  const speed = Math.min(99, Math.max(1, Number(document.getElementById("speed").value)));
+  const stamina = Math.min(99, Math.max(1, Number(document.getElementById("stamina").value)));
+
+  const overall = Math.min(
+    99,
+    Math.max(
+      1,
+      Math.round((shot * 2 + defense * 2 + pass * 1.5 + speed * 1.5 + stamina) / 8)
+    )
+  );
+
+  document.getElementById("shot").value = shot;
+  document.getElementById("defense").value = defense;
+  document.getElementById("pass").value = pass;
+  document.getElementById("speed").value = speed;
+  document.getElementById("stamina").value = stamina;
+  document.getElementById("overall").value = overall;
+
   return {
     name: document.getElementById("name").value.trim(),
     position: document.getElementById("position").value,
-    overall: Number(document.getElementById("overall").value),
-    shot: Number(document.getElementById("shot").value),
-    defense: Number(document.getElementById("defense").value),
-    pass: Number(document.getElementById("pass").value),
-    speed: Number(document.getElementById("speed").value),
-    stamina: Number(document.getElementById("stamina").value),
+    overall,
+    shot,
+    defense,
+    pass,
+    speed,
+    stamina,
     active: true,
     playingToday: true,
     isBench: false
@@ -421,14 +442,39 @@ function getFormValues() {
 }
 
 function calculateOverall() {
-  const shot = Number(document.getElementById("shot").value) || 0;
-  const defense = Number(document.getElementById("defense").value) || 0;
-  const pass = Number(document.getElementById("pass").value) || 0;
-  const speed = Number(document.getElementById("speed").value) || 0;
-  const stamina = Number(document.getElementById("stamina").value) || 0;
+  const shotInput = document.getElementById("shot");
+  const defenseInput = document.getElementById("defense");
+  const passInput = document.getElementById("pass");
+  const speedInput = document.getElementById("speed");
+  const staminaInput = document.getElementById("stamina");
+  const overallInput = document.getElementById("overall");
+
+  let shot = Number(shotInput.value) || 0;
+  let defense = Number(defenseInput.value) || 0;
+  let pass = Number(passInput.value) || 0;
+  let speed = Number(speedInput.value) || 0;
+  let stamina = Number(staminaInput.value) || 0;
+
+  if (shot > 99) shot = 99;
+  if (defense > 99) defense = 99;
+  if (pass > 99) pass = 99;
+  if (speed > 99) speed = 99;
+  if (stamina > 99) stamina = 99;
+
+  if (shot < 1 && shotInput.value !== "") shot = 1;
+  if (defense < 1 && defenseInput.value !== "") defense = 1;
+  if (pass < 1 && passInput.value !== "") pass = 1;
+  if (speed < 1 && speedInput.value !== "") speed = 1;
+  if (stamina < 1 && staminaInput.value !== "") stamina = 1;
+
+  shotInput.value = shot || "";
+  defenseInput.value = defense || "";
+  passInput.value = pass || "";
+  speedInput.value = speed || "";
+  staminaInput.value = stamina || "";
 
   if (!shot || !defense || !pass || !speed || !stamina) {
-    document.getElementById("overall").value = "";
+    overallInput.value = "";
     return;
   }
 
@@ -436,8 +482,8 @@ function calculateOverall() {
     (shot * 2 + defense * 2 + pass * 1.5 + speed * 1.5 + stamina) / 8
   );
 
-  document.getElementById("overall").value = overall;
-}}
+  overallInput.value = Math.min(99, Math.max(1, overall));
+}
 
 function canCurrentUserEditPlayer(player) {
   if (!currentAuthUser || !player) return false;
