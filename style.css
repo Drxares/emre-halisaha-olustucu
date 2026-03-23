@@ -550,29 +550,40 @@ button.edit-btn:hover {
 }
 
 #authScreen .mobile-frame {
-  max-width: 760px;
   width: 100%;
+  max-width: 620px;
 }
 
 #authScreen .hero,
 #authScreen .card {
-  max-width: 720px;
+  width: 100%;
+  max-width: 620px;
   margin-left: auto;
   margin-right: auto;
 }
 
+#authScreen .hero {
+  text-align: center;
+  padding: 24px 20px;
+}
+
+#authScreen .card {
+  padding: 22px;
+}
+
 #authScreen .button-group {
-  justify-content: flex-start;
+  justify-content: center;
+  margin-bottom: 10px;
 }
 
 #showLoginBtn,
 #showRegisterBtn {
-  min-width: 130px;
+  min-width: 150px;
 }
 
 #loginForm,
 #registerForm {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 #authMessage {
