@@ -7,160 +7,246 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app-shell">
+  <div id="authScreen" class="app-shell">
     <div class="mobile-frame">
       <header class="hero">
         <div>
-          <h1>Halısaha Takım</h1>
-          <p>Kadroyu oluştur, aktifleri seç, dengeli takımları çıkar.</p>
+          <h1>Halısaha Giriş</h1>
+          <p>Giriş yap veya kayıt ol, sonra takım ekranına geç.</p>
         </div>
       </header>
 
       <section class="card">
         <div class="section-head">
-          <h2>Oyuncu Ekle / Düzenle</h2>
+          <h2>Hesap</h2>
         </div>
 
-        <form id="playerForm">
-          <input type="hidden" id="editIndex" value="-1" />
+        <div class="button-group" style="margin-bottom:14px;">
+          <button type="button" id="showLoginBtn">Giriş Yap</button>
+          <button type="button" id="showRegisterBtn" class="secondary">Kayıt Ol</button>
+        </div>
 
+        <form id="loginForm">
           <div class="grid form-grid">
             <div class="field">
-              <label for="name">Oyuncu adı</label>
-              <input type="text" id="name" placeholder="Örn: Emre" required />
+              <label for="loginFirstName">İsim</label>
+              <input type="text" id="loginFirstName" placeholder="Örn: Emre" required />
             </div>
 
             <div class="field">
-              <label for="position">Pozisyon</label>
-              <select id="position" required>
-                <option value="">Pozisyon seç</option>
-                <option value="Kaleci">Kaleci</option>
-                <option value="Defans">Defans</option>
-                <option value="Orta Saha">Orta Saha</option>
-                <option value="Forvet">Forvet</option>
-              </select>
+              <label for="loginLastName">Soyisim</label>
+              <input type="text" id="loginLastName" placeholder="Örn: Koç" required />
             </div>
 
-            <div class="field">
-              <label for="overall">Genel güç</label>
-              <input type="number" id="overall" min="1" max="10" placeholder="1-10" required />
-            </div>
-
-            <div class="field">
-              <label for="shot">Şut</label>
-              <input type="number" id="shot" min="1" max="10" placeholder="1-10" required />
-            </div>
-
-            <div class="field">
-              <label for="defense">Defans</label>
-              <input type="number" id="defense" min="1" max="10" placeholder="1-10" required />
-            </div>
-
-            <div class="field">
-              <label for="pass">Pas</label>
-              <input type="number" id="pass" min="1" max="10" placeholder="1-10" required />
-            </div>
-
-            <div class="field">
-              <label for="speed">Hız</label>
-              <input type="number" id="speed" min="1" max="10" placeholder="1-10" required />
-            </div>
-
-            <div class="field">
-              <label for="stamina">Dayanıklılık</label>
-              <input type="number" id="stamina" min="1" max="10" placeholder="1-10" required />
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="loginPassword">Şifre</label>
+              <input type="password" id="loginPassword" placeholder="Şifre" required />
             </div>
           </div>
 
           <div class="button-group top-space">
-            <button type="submit" id="savePlayerBtn">Kaydet</button>
-            <button type="button" id="cancelEditBtn" class="secondary">İptal</button>
+            <button type="submit">Giriş Yap</button>
           </div>
         </form>
-      </section>
 
-      <section class="card">
-        <div class="section-head">
-          <h2>Takım Ayarları</h2>
-          <span class="badge" id="activeCountBadge">0 aktif</span>
-        </div>
-
-        <div class="grid settings-grid">
-          <div class="field">
-            <label for="teamSize">Takım başına oyuncu</label>
-            <input type="number" id="teamSize" min="1" placeholder="Örn: 5" />
-          </div>
-
-          <div class="field">
-            <label for="balanceMode">Mod</label>
-            <select id="balanceMode">
-              <option value="balanced">Tam Dengeli</option>
-              <option value="semi-random">Yarı Rastgele</option>
-              <option value="random">Tam Rastgele</option>
-            </select>
-          </div>
-
-          <label class="check-card">
-            <input type="checkbox" id="usePositionBalance" checked />
-            <span>Pozisyon dengesi</span>
-          </label>
-
-          <label class="check-card">
-            <input type="checkbox" id="useGoalkeeperBalance" checked />
-            <span>Kaleci dengesi</span>
-          </label>
-        </div>
-
-        <div class="button-group top-space">
-          <button id="generateTeamsBtn" type="button">Takımları Oluştur</button>
-          <button id="clearPlayersBtn" type="button" class="danger">Tümünü Sil</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="section-head">
-          <h2>Oyuncular</h2>
-          <span class="badge" id="playerCountBadge">0 oyuncu</span>
-        </div>
-        <div id="playersList"></div>
-      </section>
-
-      <section class="card" id="resultsCard">
-        <div class="section-head">
-          <h2>Takımlar</h2>
-          <span class="badge" id="resultInfoBadge">Henüz oluşturulmadı</span>
-        </div>
-
-        <div class="teams-wrapper">
-          <div class="pitch-card">
-            <div class="pitch-head">
-              <h3>Takım A</h3>
-              <div class="mini-score" id="teamATotal"></div>
+        <form id="registerForm" style="display:none;">
+          <div class="grid form-grid">
+            <div class="field">
+              <label for="registerFirstName">İsim</label>
+              <input type="text" id="registerFirstName" placeholder="Örn: Emre" required />
             </div>
-            <div class="pitch-zone" id="teamA"></div>
-          </div>
 
-          <div class="pitch-card">
-            <div class="pitch-head">
-              <h3>Takım B</h3>
-              <div class="mini-score" id="teamBTotal"></div>
+            <div class="field">
+              <label for="registerLastName">Soyisim</label>
+              <input type="text" id="registerLastName" placeholder="Örn: Koç" required />
             </div>
-            <div class="pitch-zone" id="teamB"></div>
-          </div>
-        </div>
 
-        <div class="bench-card">
-          <div class="bench-head">
-            <h3>Yedekler</h3>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="registerPassword">Şifre</label>
+              <input type="password" id="registerPassword" placeholder="Şifre belirle" required />
+            </div>
           </div>
-          <div id="benchList"></div>
-        </div>
 
-        <div class="meta-grid">
-          <div class="meta-box" id="teamAMeta"></div>
-          <div class="meta-box" id="teamBMeta"></div>
-        </div>
+          <div class="button-group top-space">
+            <button type="submit">Kayıt Ol</button>
+          </div>
+        </form>
+
+        <p id="authMessage" class="empty-text" style="display:none; margin-top:12px;"></p>
       </section>
+    </div>
+  </div>
+
+  <div id="appRoot" style="display:none;">
+    <div class="app-shell">
+      <div class="mobile-frame">
+        <header class="hero">
+          <div>
+            <h1>Halısaha Takım</h1>
+            <p>Kadroyu oluştur, aktifleri seç, dengeli takımları çıkar.</p>
+          </div>
+
+          <div class="button-group" style="margin-top:14px;">
+            <button type="button" id="logoutBtn" class="secondary">Çıkış Yap</button>
+          </div>
+
+          <div id="sessionInfo" style="margin-top:10px; font-size:14px;"></div>
+        </header>
+
+        <section class="card" id="adminUsersCard" style="display:none;">
+          <div class="section-head">
+            <h2>Kullanıcı Yetkileri</h2>
+            <span class="badge" id="userCountBadge">0 kullanıcı</span>
+          </div>
+          <div id="usersList"></div>
+        </section>
+
+        <section class="card" id="playerFormCard" style="display:none;">
+          <div class="section-head">
+            <h2>Oyuncu Ekle / Düzenle</h2>
+          </div>
+
+          <form id="playerForm">
+            <input type="hidden" id="editIndex" value="-1" />
+
+            <div class="grid form-grid">
+              <div class="field">
+                <label for="name">Oyuncu adı</label>
+                <input type="text" id="name" placeholder="Örn: Emre Koç" required />
+              </div>
+
+              <div class="field">
+                <label for="position">Pozisyon</label>
+                <select id="position" required>
+                  <option value="">Pozisyon seç</option>
+                  <option value="Kaleci">Kaleci</option>
+                  <option value="Defans">Defans</option>
+                  <option value="Orta Saha">Orta Saha</option>
+                  <option value="Forvet">Forvet</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="overall">Genel güç</label>
+                <input type="number" id="overall" min="1" max="10" placeholder="1-10" required />
+              </div>
+
+              <div class="field">
+                <label for="shot">Şut</label>
+                <input type="number" id="shot" min="1" max="10" placeholder="1-10" required />
+              </div>
+
+              <div class="field">
+                <label for="defense">Defans</label>
+                <input type="number" id="defense" min="1" max="10" placeholder="1-10" required />
+              </div>
+
+              <div class="field">
+                <label for="pass">Pas</label>
+                <input type="number" id="pass" min="1" max="10" placeholder="1-10" required />
+              </div>
+
+              <div class="field">
+                <label for="speed">Hız</label>
+                <input type="number" id="speed" min="1" max="10" placeholder="1-10" required />
+              </div>
+
+              <div class="field">
+                <label for="stamina">Dayanıklılık</label>
+                <input type="number" id="stamina" min="1" max="10" placeholder="1-10" required />
+              </div>
+            </div>
+
+            <div class="button-group top-space">
+              <button type="submit" id="savePlayerBtn">Kaydet</button>
+              <button type="button" id="cancelEditBtn" class="secondary">İptal</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <h2>Takım Ayarları</h2>
+            <span class="badge" id="activeCountBadge">0 aktif</span>
+          </div>
+
+          <div class="grid settings-grid">
+            <div class="field">
+              <label for="teamSize">Takım başına oyuncu</label>
+              <input type="number" id="teamSize" min="1" placeholder="Örn: 5" />
+            </div>
+
+            <div class="field">
+              <label for="balanceMode">Mod</label>
+              <select id="balanceMode">
+                <option value="balanced">Tam Dengeli</option>
+                <option value="semi-random">Yarı Rastgele</option>
+                <option value="random">Tam Rastgele</option>
+              </select>
+            </div>
+
+            <label class="check-card">
+              <input type="checkbox" id="usePositionBalance" checked />
+              <span>Pozisyon dengesi</span>
+            </label>
+
+            <label class="check-card">
+              <input type="checkbox" id="useGoalkeeperBalance" checked />
+              <span>Kaleci dengesi</span>
+            </label>
+          </div>
+
+          <div class="button-group top-space">
+            <button id="generateTeamsBtn" type="button">Takımları Oluştur</button>
+            <button id="clearPlayersBtn" type="button" class="danger">Tümünü Sil</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <h2>Oyuncular</h2>
+            <span class="badge" id="playerCountBadge">0 oyuncu</span>
+          </div>
+          <div id="playersList"></div>
+        </section>
+
+        <section class="card" id="resultsCard">
+          <div class="section-head">
+            <h2>Takımlar</h2>
+            <span class="badge" id="resultInfoBadge">Henüz oluşturulmadı</span>
+          </div>
+
+          <div class="teams-wrapper">
+            <div class="pitch-card">
+              <div class="pitch-head">
+                <h3>Takım A</h3>
+                <div class="mini-score" id="teamATotal"></div>
+              </div>
+              <div class="pitch-zone" id="teamA"></div>
+            </div>
+
+            <div class="pitch-card">
+              <div class="pitch-head">
+                <h3>Takım B</h3>
+                <div class="mini-score" id="teamBTotal"></div>
+              </div>
+              <div class="pitch-zone" id="teamB"></div>
+            </div>
+          </div>
+
+          <div class="bench-card">
+            <div class="bench-head">
+              <h3>Yedekler</h3>
+            </div>
+            <div id="benchList"></div>
+          </div>
+
+          <div class="meta-grid">
+            <div class="meta-box" id="teamAMeta"></div>
+            <div class="meta-box" id="teamBMeta"></div>
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 
