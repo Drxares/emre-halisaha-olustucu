@@ -68,6 +68,35 @@
   </div>
 </div>
 
+        <button type="submit" class="auth-submit">Giriş Yap</button>
+      </form>
+
+      <form id="registerForm" class="auth-form" style="display:none;">
+        <div class="auth-grid">
+          <div class="field">
+            <label for="registerFirstName">İsim</label>
+            <input type="text" id="registerFirstName" placeholder="Örn: Emre" required />
+          </div>
+
+          <div class="field">
+            <label for="registerLastName">Soyisim</label>
+            <input type="text" id="registerLastName" placeholder="Örn: Koç" required />
+          </div>
+
+          <div class="field auth-full">
+            <label for="registerPassword">Şifre</label>
+            <input type="password" id="registerPassword" placeholder="En az 6 karakter şifre belirle" required />
+          </div>
+        </div>
+
+        <button type="submit" class="auth-submit">Kayıt Ol</button>
+      </form>
+
+      <p id="authMessage" class="auth-message" style="display:none;"></p>
+    </section>
+  </div>
+</div>
+
           <div class="button-group top-space">
             <button type="submit">Kayıt Ol</button>
           </div>
