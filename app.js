@@ -174,7 +174,7 @@ async function getCurrentUserDoc(uid) {
   return { uid: snap.id, ...snap.data() };
 }
 
-async function registerNewAccount(firstName, lastName, password, photoBase64) {
+async function registerNewAccount(firstName, lastName, password) {
   const cleanFirstName = prettifyName(firstName);
   const cleanLastName = prettifyName(lastName);
   const fullName = `${cleanFirstName} ${cleanLastName}`;
@@ -199,19 +199,17 @@ async function registerNewAccount(firstName, lastName, password, photoBase64) {
   const role = firstUser ? "admin" : "user";
 
   await setDoc(doc(db, "users", uid), {
-  firstName: cleanFirstName,
-  lastName: cleanLastName,
-  fullName,
-  email,
-  role,
-  photo: photoBase64 || null,
-  createdAt: new Date().toISOString()
-});
+    firstName: cleanFirstName,
+    lastName: cleanLastName,
+    fullName,
+    email,
+    role,
+    createdAt: new Date().toISOString()
+  });
 
   await addDoc(playersCollection, {
     ownerUid: uid,
     name: fullName,
-    photo: photoBase64 || null,
     position: "Orta Saha",
     overall: 5,
     shot: 5,
@@ -246,29 +244,12 @@ loginForm.addEventListener("submit", async (e) => {
 });
 
 registerForm.addEventListener("submit", async (e) => {
-  console.log("REGISTER SUBMIT CALISTI");
   e.preventDefault();
   hideAuthMessage();
 
   const firstName = document.getElementById("registerFirstName").value;
   const lastName = document.getElementById("registerLastName").value;
   const password = document.getElementById("registerPassword").value;
-  const photoInput = document.getElementById("profilePhoto");
-  const photoFile = photoInput.files[0];
-  console.log("SECILEN DOSYA:", photoFile);
-
-  let photoBase64 = null;
-
-if (photoFile) {
-  photoBase64 = await new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(photoFile);
-  });
-}
-  
-  console.log("PHOTO BASE64 OLUSTU MU:", !!photoBase64);
-  
 
   if (!firstName.trim() || !lastName.trim() || password.length < 6) {
     showAuthMessage("İsim, soyisim ve en az 6 karakter şifre gir.", true);
@@ -276,7 +257,7 @@ if (photoFile) {
   }
 
   try {
-    await registerNewAccount(firstName, lastName, password, photoBase64);
+    await registerNewAccount(firstName, lastName, password);
     registerForm.reset();
   } catch (error) {
     console.error(error);
@@ -458,7 +439,9 @@ function renderPlayers() {
   const playerCountBadge = document.getElementById("playerCountBadge");
   const activeCountBadge = document.getElementById("activeCountBadge");
 
-  const visiblePlayers = players;
+  const visiblePlayers = isAdmin() || canEditRatings()
+    ? players
+    : players.filter(p => p.ownerUid === currentAuthUser?.uid);
 
   const activeCount = visiblePlayers.filter(p => p.active && p.playingToday && !p.isBench).length;
 
@@ -477,31 +460,23 @@ function renderPlayers() {
     const showActions = editable;
 
     return `
-  <div class="player-item">
-    <div class="player-top">
-      <div class="player-left">
-        <div class="player-avatar">
-          ${player.photo
-            ? `<img src="${player.photo}" alt="${player.name}" class="player-avatar-img">`
-            : `<div class="player-avatar-placeholder">${player.name.charAt(0).toUpperCase()}</div>`}
+      <div class="player-item">
+        <div class="player-top">
+          <div class="player-left">
+            <div class="player-name">${player.name}</div>
+            <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
+          </div>
         </div>
 
-        <div class="player-main-info">
-          <div class="player-name">${player.name}</div>
-          <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
+        <div class="player-flags">
+          <span class="flag-pill ${player.active ? 'flag-active' : 'flag-passive'}">
+            ${player.active ? 'Aktif' : 'Pasif'}
+          </span>
+          <span class="flag-pill ${player.playingToday ? 'flag-active' : 'flag-passive'}">
+            ${player.playingToday ? 'Bugün Oynuyor' : 'Bugün Yok'}
+          </span>
+          ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
         </div>
-      </div>
-    </div>
-
-    <div class="player-flags">
-      <span class="flag-pill ${player.active ? 'flag-active' : 'flag-passive'}">
-        ${player.active ? 'Aktif' : 'Pasif'}
-      </span>
-      <span class="flag-pill ${player.playingToday ? 'flag-active' : 'flag-passive'}">
-        ${player.playingToday ? 'Bugün Oynuyor' : 'Bugün Yok'}
-      </span>
-      ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
-    </div>
 
         <div class="player-stats">
           Genel: ${player.overall} |
