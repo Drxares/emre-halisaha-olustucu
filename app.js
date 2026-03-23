@@ -174,7 +174,7 @@ async function getCurrentUserDoc(uid) {
   return { uid: snap.id, ...snap.data() };
 }
 
-async function registerNewAccount(firstName, lastName, password) {
+async function registerNewAccount(firstName, lastName, password, photoBase64) {
   const cleanFirstName = prettifyName(firstName);
   const cleanLastName = prettifyName(lastName);
   const fullName = `${cleanFirstName} ${cleanLastName}`;
@@ -199,13 +199,14 @@ async function registerNewAccount(firstName, lastName, password) {
   const role = firstUser ? "admin" : "user";
 
   await setDoc(doc(db, "users", uid), {
-    firstName: cleanFirstName,
-    lastName: cleanLastName,
-    fullName,
-    email,
-    role,
-    createdAt: new Date().toISOString()
-  });
+  firstName: cleanFirstName,
+  lastName: cleanLastName,
+  fullName,
+  email,
+  role,
+  photo: photoBase64 || null,
+  createdAt: new Date().toISOString()
+});
 
   await addDoc(playersCollection, {
     ownerUid: uid,
@@ -250,6 +251,19 @@ registerForm.addEventListener("submit", async (e) => {
   const firstName = document.getElementById("registerFirstName").value;
   const lastName = document.getElementById("registerLastName").value;
   const password = document.getElementById("registerPassword").value;
+  const photoInput = document.getElementById("profilePhoto");
+  const photoFile = photoInput.files[0];
+
+  let photoBase64 = null;
+
+if (photoFile) {
+  photoBase64 = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(photoFile);
+  });
+}
+  
 
   if (!firstName.trim() || !lastName.trim() || password.length < 6) {
     showAuthMessage("İsim, soyisim ve en az 6 karakter şifre gir.", true);
@@ -257,7 +271,7 @@ registerForm.addEventListener("submit", async (e) => {
   }
 
   try {
-    await registerNewAccount(firstName, lastName, password);
+    await registerNewAccount(firstName, lastName, password, photoBase64);
     registerForm.reset();
   } catch (error) {
     console.error(error);
