@@ -351,7 +351,7 @@ function validatePlayer(player) {
     player.name &&
     player.position &&
     [player.overall, player.shot, player.defense, player.pass, player.speed, player.stamina]
-      .every(v => v >= 1 && v <= 10)
+      .every(v => v >= 1 && v <= 99)
   );
 }
 
