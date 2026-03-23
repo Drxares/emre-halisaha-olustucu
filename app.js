@@ -458,9 +458,7 @@ function renderPlayers() {
   const playerCountBadge = document.getElementById("playerCountBadge");
   const activeCountBadge = document.getElementById("activeCountBadge");
 
-  const visiblePlayers = isAdmin() || canEditRatings()
-    ? players
-    : players.filter(p => p.ownerUid === currentAuthUser?.uid);
+  const visiblePlayers = players;
 
   const activeCount = visiblePlayers.filter(p => p.active && p.playingToday && !p.isBench).length;
 
