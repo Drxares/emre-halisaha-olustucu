@@ -155,6 +155,30 @@
                 <label for="stamina">Dayanıklılık</label>
                 <input type="number" id="stamina" min="1" max="10" placeholder="1-10" required />
               </div>
+
+              <div class="field" style="grid-column: 1 / -1;">
+                <label for="playerImage">Oyuncu resmi</label>
+                <input type="file" id="playerImage" accept="image/*" />
+              </div>
+
+              <div class="field" id="playerImagePreviewWrap" style="grid-column: 1 / -1; display:none;">
+                <label>Resim önizleme</label>
+                <img
+                  id="playerImagePreview"
+                  src=""
+                  alt="Oyuncu resmi önizleme"
+                  style="display:block; width:96px; height:96px; object-fit:cover; border-radius:14px; border:1px solid #dbe2ea; margin-top:8px;"
+                />
+              </div>
+
+              <label
+                class="check-card"
+                id="removePlayerImageWrap"
+                style="grid-column: 1 / -1; display:none;"
+              >
+                <input type="checkbox" id="removePlayerImage" />
+                <span>Mevcut resmi kaldır</span>
+              </label>
             </div>
 
             <div class="button-group top-space">
