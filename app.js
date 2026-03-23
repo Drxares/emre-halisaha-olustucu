@@ -253,6 +253,7 @@ registerForm.addEventListener("submit", async (e) => {
   const password = document.getElementById("registerPassword").value;
   const photoInput = document.getElementById("profilePhoto");
   const photoFile = photoInput.files[0];
+  console.log("SECILEN DOSYA:", photoFile);
 
   let photoBase64 = null;
 
@@ -263,6 +264,8 @@ if (photoFile) {
     reader.readAsDataURL(photoFile);
   });
 }
+  
+  console.log("PHOTO BASE64 OLUSTU MU:", !!photoBase64);
   
 
   if (!firstName.trim() || !lastName.trim() || password.length < 6) {
