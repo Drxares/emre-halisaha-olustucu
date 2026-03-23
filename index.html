@@ -8,72 +8,75 @@
 </head>
 <body>
   <div id="authScreen" class="app-shell">
-    <div class="mobile-frame">
-      <header class="hero">
+    <div class="mobile-frame auth-frame">
+      <header class="hero auth-hero">
         <div>
           <h1>Halısaha Giriş</h1>
           <p>Giriş yap veya kayıt ol, sonra takım ekranına geç.</p>
         </div>
       </header>
 
-      <section class="card">
-        <div class="section-head">
-          <h2>Hesap</h2>
-        </div>
-
-        <div class="button-group" style="margin-bottom:14px;">
-          <button type="button" id="showLoginBtn">Giriş Yap</button>
-          <button type="button" id="showRegisterBtn" class="secondary">Kayıt Ol</button>
-        </div>
-
-        <form id="loginForm">
-          <div class="grid form-grid">
-            <div class="field">
-              <label for="loginFirstName">İsim</label>
-              <input type="text" id="loginFirstName" placeholder="Örn: Emre" required />
-            </div>
-
-            <div class="field">
-              <label for="loginLastName">Soyisim</label>
-              <input type="text" id="loginLastName" placeholder="Örn: Koç" required />
-            </div>
-
-            <div class="field" style="grid-column: 1 / -1;">
-              <label for="loginPassword">Şifre</label>
-              <input type="password" id="loginPassword" placeholder="Şifre" required />
-            </div>
+      <div class="auth-dual-grid">
+        <section class="card auth-card-box">
+          <div class="section-head">
+            <h2>Giriş Yap</h2>
           </div>
 
-          <div class="button-group top-space">
-            <button type="submit">Giriş Yap</button>
-          </div>
-        </form>
+          <form id="loginForm">
+            <div class="grid form-grid">
+              <div class="field">
+                <label for="loginFirstName">İsim</label>
+                <input type="text" id="loginFirstName" placeholder="Örn: Emre" required />
+              </div>
 
-        <form id="registerForm" style="display:none;">
-          <div class="grid form-grid">
-            <div class="field">
-              <label for="registerFirstName">İsim</label>
-              <input type="text" id="registerFirstName" placeholder="Örn: Emre" required />
+              <div class="field">
+                <label for="loginLastName">Soyisim</label>
+                <input type="text" id="loginLastName" placeholder="Örn: Koç" required />
+              </div>
+
+              <div class="field" style="grid-column: 1 / -1;">
+                <label for="loginPassword">Şifre</label>
+                <input type="password" id="loginPassword" placeholder="Şifre" required />
+              </div>
             </div>
 
-            <div class="field">
-              <label for="registerLastName">Soyisim</label>
-              <input type="text" id="registerLastName" placeholder="Örn: Koç" required />
+            <div class="button-group top-space">
+              <button type="submit" id="showLoginBtn">Giriş Yap</button>
             </div>
+          </form>
+        </section>
 
-            <div class="field" style="grid-column: 1 / -1;">
-              <label for="registerPassword">Şifre</label>
-              <input type="password" id="registerPassword" placeholder="Şifre belirle" required />
-            </div>
+        <section class="card auth-card-box">
+          <div class="section-head">
+            <h2>Kayıt Ol</h2>
           </div>
 
-          <div class="button-group top-space">
-            <button type="submit">Kayıt Ol</button>
-          </div>
-        </form>
+          <form id="registerForm">
+            <div class="grid form-grid">
+              <div class="field">
+                <label for="registerFirstName">İsim</label>
+                <input type="text" id="registerFirstName" placeholder="Örn: Emre" required />
+              </div>
 
-        <p id="authMessage" class="empty-text" style="display:none; margin-top:12px;"></p>
-      </section>
+              <div class="field">
+                <label for="registerLastName">Soyisim</label>
+                <input type="text" id="registerLastName" placeholder="Örn: Koç" required />
+              </div>
+
+              <div class="field" style="grid-column: 1 / -1;">
+                <label for="registerPassword">Şifre</label>
+                <input type="password" id="registerPassword" placeholder="Şifre belirle" required />
+              </div>
+            </div>
+
+            <div class="button-group top-space">
+              <button type="submit" id="showRegisterBtn" class="secondary auth-register-btn">Kayıt Ol</button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <p id="authMessage" class="empty-text auth-message-box" style="display:none;"></p>
     </div>
   </div>
 
