@@ -420,6 +420,25 @@ function getFormValues() {
   };
 }
 
+function calculateOverall() {
+  const shot = Number(document.getElementById("shot").value) || 0;
+  const defense = Number(document.getElementById("defense").value) || 0;
+  const pass = Number(document.getElementById("pass").value) || 0;
+  const speed = Number(document.getElementById("speed").value) || 0;
+  const stamina = Number(document.getElementById("stamina").value) || 0;
+
+  if (!shot || !defense || !pass || !speed || !stamina) {
+    document.getElementById("overall").value = "";
+    return;
+  }
+
+  const overall = Math.round(
+    (shot * 2 + defense * 2 + pass * 1.5 + speed * 1.5 + stamina) / 8
+  );
+
+  document.getElementById("overall").value = overall;
+}}
+
 function canCurrentUserEditPlayer(player) {
   if (!currentAuthUser || !player) return false;
   if (isAdmin() || canEditRatings()) return true;
@@ -577,6 +596,8 @@ function editPlayer(index) {
   playerImageInput.value = "";
   removePlayerImageCheckbox.checked = false;
   updateImagePreview(p.imageBase64 || "", !!p.imageBase64);
+
+  calculateOverall();
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1108,6 +1129,10 @@ playerForm.addEventListener("submit", async function (e) {
 
 cancelEditBtn.addEventListener("click", resetForm);
 generateTeamsBtn.addEventListener("click", generateTeams);
+
+["shot", "defense", "pass", "speed", "stamina"].forEach(id => {
+  document.getElementById(id)?.addEventListener("input", calculateOverall);
+});
 
 clearPlayersBtn.addEventListener("click", async function () {
   if (!isAdmin()) {
