@@ -58,6 +58,12 @@ const generateTeamsBtn = document.getElementById("generateTeamsBtn");
 const clearPlayersBtn = document.getElementById("clearPlayersBtn");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 
+const playerImageInput = document.getElementById("playerImage");
+const playerImagePreviewWrap = document.getElementById("playerImagePreviewWrap");
+const playerImagePreview = document.getElementById("playerImagePreview");
+const removePlayerImageWrap = document.getElementById("removePlayerImageWrap");
+const removePlayerImageCheckbox = document.getElementById("removePlayerImage");
+
 const teamAEl = document.getElementById("teamA");
 const teamBEl = document.getElementById("teamB");
 const benchListEl = document.getElementById("benchList");
@@ -147,6 +153,45 @@ function canEditRatings() {
 
 function isNormalUser() {
   return currentUserDoc?.role === "user";
+}
+
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function updateImagePreview(imageSrc = "", showRemoveOption = false) {
+  if (imageSrc) {
+    playerImagePreview.src = imageSrc;
+    playerImagePreviewWrap.style.display = "block";
+  } else {
+    playerImagePreview.src = "";
+    playerImagePreviewWrap.style.display = "none";
+  }
+
+  removePlayerImageWrap.style.display = showRemoveOption ? "flex" : "none";
+}
+
+function getPlayerAvatarHtml(player, className = "player-avatar") {
+  if (player?.imageBase64) {
+    return `<img src="${player.imageBase64}" alt="${escapeHtml(player.name)}" class="${className}" />`;
+  }
+
+  const firstLetter = (player?.name || "?").trim().charAt(0).toUpperCase() || "?";
+  return `<div class="${className} player-avatar-placeholder">${escapeHtml(firstLetter)}</div>`;
 }
 
 async function loadUsers() {
@@ -300,6 +345,9 @@ function resetForm() {
   playerForm.reset();
   document.getElementById("editIndex").value = -1;
   document.getElementById("savePlayerBtn").textContent = "Kaydet";
+  playerImageInput.value = "";
+  removePlayerImageCheckbox.checked = false;
+  updateImagePreview("", false);
 }
 
 function validatePlayer(player) {
@@ -396,13 +444,13 @@ function renderUsers() {
     <div class="player-item">
       <div class="player-top">
         <div class="player-left">
-          <div class="player-name">${user.fullName}</div>
-          <span class="position-badge badge-orta-saha">${user.role}</span>
+          <div class="player-name">${escapeHtml(user.fullName)}</div>
+          <span class="position-badge badge-orta-saha">${escapeHtml(user.role)}</span>
         </div>
       </div>
 
       <div class="player-stats">
-        Gizli giriş: ${user.email}
+        Gizli giriş: ${escapeHtml(user.email)}
       </div>
 
       <div class="player-actions">
@@ -462,9 +510,12 @@ function renderPlayers() {
     return `
       <div class="player-item">
         <div class="player-top">
-          <div class="player-left">
-            <div class="player-name">${player.name}</div>
-            <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
+          <div class="player-left" style="display:flex; align-items:center; gap:12px;">
+            ${getPlayerAvatarHtml(player)}
+            <div>
+              <div class="player-name">${escapeHtml(player.name)}</div>
+              <span class="position-badge ${getPositionBadgeClass(player.position)}">${escapeHtml(player.position)}</span>
+            </div>
           </div>
         </div>
 
@@ -529,6 +580,11 @@ function editPlayer(index) {
   document.getElementById("stamina").value = p.stamina;
   document.getElementById("editIndex").value = index;
   document.getElementById("savePlayerBtn").textContent = "Güncelle";
+
+  playerImageInput.value = "";
+  removePlayerImageCheckbox.checked = false;
+  updateImagePreview(p.imageBase64 || "", !!p.imageBase64);
+
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -782,9 +838,12 @@ function renderSingleTeam(team, target, teamKey) {
     <div class="team-player" draggable="true"
       data-team="${teamKey}"
       data-index="${index}">
-      <div class="team-player-head">
-        <div class="team-player-name">${player.name}</div>
-        <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
+      <div class="team-player-head" style="display:flex; align-items:center; gap:10px;">
+        ${getPlayerAvatarHtml(player, "team-player-avatar")}
+        <div style="flex:1;">
+          <div class="team-player-name">${escapeHtml(player.name)}</div>
+          <span class="position-badge ${getPositionBadgeClass(player.position)}">${escapeHtml(player.position)}</span>
+        </div>
       </div>
       <div class="team-player-stats">
         Genel: ${player.overall} | Şut: ${player.shot} | Defans: ${player.defense}<br>
@@ -803,9 +862,12 @@ function renderBench(bench) {
   }
 
   benchListEl.innerHTML = bench.map(player => `
-    <div class="bench-player">
-      <strong>${player.name}</strong><br>
-      <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
+    <div class="bench-player" style="display:flex; align-items:center; gap:10px;">
+      ${getPlayerAvatarHtml(player, "bench-player-avatar")}
+      <div>
+        <strong>${escapeHtml(player.name)}</strong><br>
+        <span class="position-badge ${getPositionBadgeClass(player.position)}">${escapeHtml(player.position)}</span>
+      </div>
     </div>
   `).join("");
 }
@@ -959,6 +1021,37 @@ function swapPlayersBetweenTeams(fromTeam, fromIndex, toTeam) {
   renderCurrentTeams();
 }
 
+playerImageInput?.addEventListener("change", async () => {
+  const file = playerImageInput.files?.[0];
+  if (!file) {
+    const editIndex = Number(document.getElementById("editIndex").value);
+    const existingImage = editIndex >= 0 ? (players[editIndex]?.imageBase64 || "") : "";
+    updateImagePreview(existingImage, !!existingImage);
+    return;
+  }
+
+  try {
+    const base64 = await fileToBase64(file);
+    updateImagePreview(base64, true);
+    removePlayerImageCheckbox.checked = false;
+  } catch (error) {
+    console.error(error);
+    alert("Resim okunamadı.");
+  }
+});
+
+removePlayerImageCheckbox?.addEventListener("change", () => {
+  if (removePlayerImageCheckbox.checked) {
+    playerImageInput.value = "";
+    updateImagePreview("", true);
+  } else {
+    const editIndex = Number(document.getElementById("editIndex").value);
+    if (playerImageInput.files?.[0]) return;
+    const existingImage = editIndex >= 0 ? (players[editIndex]?.imageBase64 || "") : "";
+    updateImagePreview(existingImage, !!existingImage);
+  }
+});
+
 playerForm.addEventListener("submit", async function (e) {
   e.preventDefault();
 
@@ -975,21 +1068,50 @@ playerForm.addEventListener("submit", async function (e) {
 
   const editIndex = Number(document.getElementById("editIndex").value);
 
+  let imageBase64Value;
+  const selectedFile = playerImageInput.files?.[0] || null;
+
+  if (selectedFile) {
+    try {
+      imageBase64Value = await fileToBase64(selectedFile);
+    } catch (error) {
+      console.error(error);
+      alert("Resim işlenemedi.");
+      return;
+    }
+  }
+
   if (editIndex >= 0) {
+    const existingPlayer = players[editIndex];
+
+    let finalImageBase64 = existingPlayer.imageBase64 || null;
+
+    if (removePlayerImageCheckbox.checked) {
+      finalImageBase64 = null;
+    }
+
+    if (imageBase64Value) {
+      finalImageBase64 = imageBase64Value;
+    }
+
     players[editIndex] = {
-      ...players[editIndex],
+      ...existingPlayer,
       ...player,
-      ownerUid: players[editIndex].ownerUid,
-      active: players[editIndex].active,
-      playingToday: players[editIndex].playingToday,
-      isBench: players[editIndex].isBench
+      ownerUid: existingPlayer.ownerUid,
+      active: existingPlayer.active,
+      playingToday: existingPlayer.playingToday,
+      isBench: existingPlayer.isBench,
+      imageBase64: finalImageBase64
     };
+
     await updatePlayerInFirestore(editIndex);
   } else {
     const newPlayer = {
       ...player,
-      ownerUid: currentAuthUser.uid
+      ownerUid: currentAuthUser.uid,
+      imageBase64: imageBase64Value || null
     };
+
     const docRef = await addDoc(playersCollection, newPlayer);
     newPlayer.id = docRef.id;
     players.push(newPlayer);
