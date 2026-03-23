@@ -1,12 +1,23 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
   getFirestore,
   collection,
   addDoc,
   getDocs,
+  getDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
-  doc
+  doc,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -19,8 +30,26 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
+
 const playersCollection = collection(db, "players");
+const usersCollection = collection(db, "users");
+
+const authScreen = document.getElementById("authScreen");
+const appRoot = document.getElementById("appRoot");
+const authMessage = document.getElementById("authMessage");
+const showLoginBtn = document.getElementById("showLoginBtn");
+const showRegisterBtn = document.getElementById("showRegisterBtn");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const logoutBtn = document.getElementById("logoutBtn");
+const sessionInfo = document.getElementById("sessionInfo");
+
+const adminUsersCard = document.getElementById("adminUsersCard");
+const usersList = document.getElementById("usersList");
+const userCountBadge = document.getElementById("userCountBadge");
+const playerFormCard = document.getElementById("playerFormCard");
 
 const playerForm = document.getElementById("playerForm");
 const playersList = document.getElementById("playersList");
@@ -38,15 +67,97 @@ const teamBMetaEl = document.getElementById("teamBMeta");
 const resultInfoBadge = document.getElementById("resultInfoBadge");
 
 let players = [];
+let users = [];
 let currentTeams = {
   teamA: [],
   teamB: [],
   bench: []
 };
 
+let currentAuthUser = null;
+let currentUserDoc = null;
+
+function normalizeName(text) {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/ç/g, "c")
+    .replace(/ğ/g, "g")
+    .replace(/ı/g, "i")
+    .replace(/İ/g, "i")
+    .replace(/ö/g, "o")
+    .replace(/ş/g, "s")
+    .replace(/ü/g, "u")
+    .replace(/\s+/g, ".");
+}
+
+function prettifyName(text) {
+  return text
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function buildHiddenEmail(firstName, lastName) {
+  return `${normalizeName(firstName)}.${normalizeName(lastName)}@halisaha.local`;
+}
+
+function showAuthMessage(text, isError = false) {
+  authMessage.style.display = "block";
+  authMessage.textContent = text;
+  authMessage.style.borderColor = isError ? "#fecaca" : "#cbd5e1";
+  authMessage.style.background = isError ? "#fef2f2" : "#f8fafc";
+  authMessage.style.color = isError ? "#b91c1c" : "#475569";
+}
+
+function hideAuthMessage() {
+  authMessage.style.display = "none";
+}
+
+function openLogin() {
+  loginForm.style.display = "block";
+  registerForm.style.display = "none";
+  showLoginBtn.classList.remove("secondary");
+  showRegisterBtn.classList.add("secondary");
+  hideAuthMessage();
+}
+
+function openRegister() {
+  loginForm.style.display = "none";
+  registerForm.style.display = "block";
+  showRegisterBtn.classList.remove("secondary");
+  showLoginBtn.classList.add("secondary");
+  hideAuthMessage();
+}
+
+showLoginBtn.addEventListener("click", openLogin);
+showRegisterBtn.addEventListener("click", openRegister);
+
+function isAdmin() {
+  return currentUserDoc?.role === "admin";
+}
+
+function canEditRatings() {
+  return currentUserDoc?.role === "admin" || currentUserDoc?.role === "editor";
+}
+
+function isNormalUser() {
+  return currentUserDoc?.role === "user";
+}
+
+async function loadUsers() {
+  const snapshot = await getDocs(usersCollection);
+  users = snapshot.docs.map(docSnap => ({
+    uid: docSnap.id,
+    ...docSnap.data()
+  }));
+}
+
 async function loadPlayers() {
   const snapshot = await getDocs(playersCollection);
-
   players = snapshot.docs
     .map(docSnap => ({
       id: docSnap.id,
@@ -55,46 +166,133 @@ async function loadPlayers() {
     .filter(player => player.name && player.position);
 }
 
-async function saveNewPlayer(player) {
-  const docRef = await addDoc(playersCollection, player);
-  player.id = docRef.id;
+async function getCurrentUserDoc(uid) {
+  const userRef = doc(db, "users", uid);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) return null;
+  return { uid: snap.id, ...snap.data() };
 }
 
-async function updatePlayerInFirestore(index) {
-  const player = players[index];
-  if (!player?.id) return;
+async function registerNewAccount(firstName, lastName, password) {
+  const cleanFirstName = prettifyName(firstName);
+  const cleanLastName = prettifyName(lastName);
+  const fullName = `${cleanFirstName} ${cleanLastName}`;
+  const email = buildHiddenEmail(cleanFirstName, cleanLastName);
 
-  const { id, ...playerData } = player;
-  await updateDoc(doc(db, "players", id), playerData);
-}
+  const sameNameQuery = query(
+    usersCollection,
+    where("email", "==", email)
+  );
+  const sameNameSnap = await getDocs(sameNameQuery);
 
-async function deletePlayerFromFirestore(index) {
-  const player = players[index];
-  if (!player?.id) return;
+  if (!sameNameSnap.empty) {
+    throw new Error("Bu isim ve soyisimle kayıt zaten var.");
+  }
 
-  await deleteDoc(doc(db, "players", player.id));
-}
+  const existingUsersSnap = await getDocs(usersCollection);
+  const firstUser = existingUsersSnap.empty;
 
-async function deleteAllPlayersFromFirestore() {
-  const snapshot = await getDocs(playersCollection);
-  const deletions = snapshot.docs.map(docSnap => deleteDoc(doc(db, "players", docSnap.id)));
-  await Promise.all(deletions);
-}
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
+  const uid = credential.user.uid;
 
-function getFormValues() {
-  return {
-    name: document.getElementById("name").value.trim(),
-    position: document.getElementById("position").value,
-    overall: Number(document.getElementById("overall").value),
-    shot: Number(document.getElementById("shot").value),
-    defense: Number(document.getElementById("defense").value),
-    pass: Number(document.getElementById("pass").value),
-    speed: Number(document.getElementById("speed").value),
-    stamina: Number(document.getElementById("stamina").value),
+  const role = firstUser ? "admin" : "user";
+
+  await setDoc(doc(db, "users", uid), {
+    firstName: cleanFirstName,
+    lastName: cleanLastName,
+    fullName,
+    email,
+    role,
+    createdAt: new Date().toISOString()
+  });
+
+  await addDoc(playersCollection, {
+    ownerUid: uid,
+    name: fullName,
+    position: "Orta Saha",
+    overall: 5,
+    shot: 5,
+    defense: 5,
+    pass: 5,
+    speed: 5,
+    stamina: 5,
     active: true,
     playingToday: true,
-    isBench: false
-  };
+    isBench: false,
+    createdAt: new Date().toISOString()
+  });
+}
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideAuthMessage();
+
+  const firstName = document.getElementById("loginFirstName").value;
+  const lastName = document.getElementById("loginLastName").value;
+  const password = document.getElementById("loginPassword").value;
+
+  const email = buildHiddenEmail(firstName, lastName);
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    loginForm.reset();
+  } catch (error) {
+    console.error(error);
+    showAuthMessage("Giriş yapılamadı. Bilgileri kontrol et.", true);
+  }
+});
+
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideAuthMessage();
+
+  const firstName = document.getElementById("registerFirstName").value;
+  const lastName = document.getElementById("registerLastName").value;
+  const password = document.getElementById("registerPassword").value;
+
+  if (!firstName.trim() || !lastName.trim() || password.length < 6) {
+    showAuthMessage("İsim, soyisim ve en az 6 karakter şifre gir.", true);
+    return;
+  }
+
+  try {
+    await registerNewAccount(firstName, lastName, password);
+    registerForm.reset();
+  } catch (error) {
+    console.error(error);
+    showAuthMessage(error.message || "Kayıt sırasında hata oluştu.", true);
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+});
+
+function updateVisibilityByRole() {
+  const admin = isAdmin();
+  const editor = canEditRatings();
+
+  adminUsersCard.style.display = admin ? "block" : "none";
+  playerFormCard.style.display = editor ? "block" : "none";
+
+  clearPlayersBtn.style.display = admin ? "inline-flex" : "none";
+
+  sessionInfo.innerHTML = `
+    <strong>${currentUserDoc?.fullName || ""}</strong> |
+    Rol: <strong>${currentUserDoc?.role || "-"}</strong>
+  `;
+}
+
+function getPositionBadgeClass(position) {
+  if (position === "Kaleci") return "badge-kaleci";
+  if (position === "Defans") return "badge-defans";
+  if (position === "Orta Saha") return "badge-orta-saha";
+  return "badge-forvet";
+}
+
+function getCurrentPlayerDoc() {
+  if (!currentAuthUser) return null;
+  return players.find(p => p.ownerUid === currentAuthUser.uid) || null;
 }
 
 function resetForm() {
@@ -141,81 +339,184 @@ async function normalizeOldPlayers() {
   }
 }
 
-function getPositionBadgeClass(position) {
-  if (position === "Kaleci") return "badge-kaleci";
-  if (position === "Defans") return "badge-defans";
-  if (position === "Orta Saha") return "badge-orta-saha";
-  return "badge-forvet";
+async function updatePlayerInFirestore(index) {
+  const player = players[index];
+  if (!player?.id) return;
+
+  const { id, ...playerData } = player;
+  await updateDoc(doc(db, "players", id), playerData);
+}
+
+async function deletePlayerFromFirestore(index) {
+  const player = players[index];
+  if (!player?.id) return;
+  await deleteDoc(doc(db, "players", player.id));
+}
+
+async function deleteAllPlayersFromFirestore() {
+  const snapshot = await getDocs(playersCollection);
+  const deletions = snapshot.docs.map(docSnap => deleteDoc(doc(db, "players", docSnap.id)));
+  await Promise.all(deletions);
+}
+
+function getFormValues() {
+  return {
+    name: document.getElementById("name").value.trim(),
+    position: document.getElementById("position").value,
+    overall: Number(document.getElementById("overall").value),
+    shot: Number(document.getElementById("shot").value),
+    defense: Number(document.getElementById("defense").value),
+    pass: Number(document.getElementById("pass").value),
+    speed: Number(document.getElementById("speed").value),
+    stamina: Number(document.getElementById("stamina").value),
+    active: true,
+    playingToday: true,
+    isBench: false
+  };
+}
+
+function canCurrentUserEditPlayer(player) {
+  if (!currentAuthUser || !player) return false;
+  if (isAdmin() || canEditRatings()) return true;
+  return player.ownerUid === currentAuthUser.uid;
+}
+
+function renderUsers() {
+  if (!isAdmin()) return;
+
+  userCountBadge.textContent = `${users.length} kullanıcı`;
+
+  if (!users.length) {
+    usersList.innerHTML = `<p class="empty-text">Henüz kullanıcı yok.</p>`;
+    return;
+  }
+
+  usersList.innerHTML = users.map(user => `
+    <div class="player-item">
+      <div class="player-top">
+        <div class="player-left">
+          <div class="player-name">${user.fullName}</div>
+          <span class="position-badge badge-orta-saha">${user.role}</span>
+        </div>
+      </div>
+
+      <div class="player-stats">
+        Gizli giriş: ${user.email}
+      </div>
+
+      <div class="player-actions">
+        <select class="role-select" data-uid="${user.uid}">
+          <option value="user" ${user.role === "user" ? "selected" : ""}>user</option>
+          <option value="editor" ${user.role === "editor" ? "selected" : ""}>editor</option>
+          <option value="admin" ${user.role === "admin" ? "selected" : ""}>admin</option>
+        </select>
+        <button type="button" class="edit-btn" onclick="saveUserRole('${user.uid}')">Yetki Kaydet</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function saveUserRole(uid) {
+  if (!isAdmin()) return;
+
+  const select = document.querySelector(`select[data-uid="${uid}"]`);
+  if (!select) return;
+
+  const role = select.value;
+  await updateDoc(doc(db, "users", uid), { role });
+
+  if (currentAuthUser && currentAuthUser.uid === uid) {
+    currentUserDoc.role = role;
+    updateVisibilityByRole();
+  }
+
+  await loadUsers();
+  renderUsers();
 }
 
 function renderPlayers() {
   const playerCountBadge = document.getElementById("playerCountBadge");
   const activeCountBadge = document.getElementById("activeCountBadge");
 
-  const activeCount = players.filter(p => p.active && p.playingToday && !p.isBench).length;
+  const visiblePlayers = isAdmin() || canEditRatings()
+    ? players
+    : players.filter(p => p.ownerUid === currentAuthUser?.uid);
 
-  if (playerCountBadge) playerCountBadge.textContent = `${players.length} oyuncu`;
+  const activeCount = visiblePlayers.filter(p => p.active && p.playingToday && !p.isBench).length;
+
+  if (playerCountBadge) playerCountBadge.textContent = `${visiblePlayers.length} oyuncu`;
   if (activeCountBadge) activeCountBadge.textContent = `${activeCount} aktif`;
 
-  if (players.length === 0) {
+  if (visiblePlayers.length === 0) {
     playersList.innerHTML = `<p class="empty-text">Henüz oyuncu eklenmedi.</p>`;
     return;
   }
 
-  playersList.innerHTML = players.map((player, index) => `
-    <div class="player-item">
-      <div class="player-top">
-        <div class="player-left">
-          <div class="player-name">${player.name}</div>
-          <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
+  playersList.innerHTML = visiblePlayers.map((player) => {
+    const realIndex = players.findIndex(p => p.id === player.id);
+    const editable = canCurrentUserEditPlayer(player);
+    const ratingsEditable = canEditRatings();
+    const showActions = editable;
+
+    return `
+      <div class="player-item">
+        <div class="player-top">
+          <div class="player-left">
+            <div class="player-name">${player.name}</div>
+            <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
+          </div>
         </div>
+
+        <div class="player-flags">
+          <span class="flag-pill ${player.active ? 'flag-active' : 'flag-passive'}">
+            ${player.active ? 'Aktif' : 'Pasif'}
+          </span>
+          <span class="flag-pill ${player.playingToday ? 'flag-active' : 'flag-passive'}">
+            ${player.playingToday ? 'Bugün Oynuyor' : 'Bugün Yok'}
+          </span>
+          ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
+        </div>
+
+        <div class="player-stats">
+          Genel: ${player.overall} |
+          Şut: ${player.shot} |
+          Defans: ${player.defense} |
+          Pas: ${player.pass} |
+          Hız: ${player.speed} |
+          Dayanıklılık: ${player.stamina}
+        </div>
+
+        <div class="player-controls">
+          <label class="toggle-box">
+            <input type="checkbox" ${player.active ? "checked" : ""} ${editable ? "" : "disabled"} onchange="togglePlayerActive(${realIndex})" />
+            <span>Aktif</span>
+          </label>
+
+          <label class="toggle-box">
+            <input type="checkbox" ${player.playingToday ? "checked" : ""} ${editable ? "" : "disabled"} onchange="togglePlayingToday(${realIndex})" />
+            <span>Bugün Var</span>
+          </label>
+
+          <label class="toggle-box">
+            <input type="checkbox" ${player.isBench ? "checked" : ""} ${editable ? "" : "disabled"} onchange="toggleBench(${realIndex})" />
+            <span>Yedek</span>
+          </label>
+        </div>
+
+        ${showActions ? `
+          <div class="player-actions">
+            ${ratingsEditable ? `<button class="edit-btn" onclick="editPlayer(${realIndex})">Düzenle</button>` : ``}
+            ${isAdmin() ? `<button class="player-delete-btn" onclick="deletePlayer(${realIndex})">Sil</button>` : ``}
+          </div>
+        ` : ``}
       </div>
-
-      <div class="player-flags">
-        <span class="flag-pill ${player.active ? "flag-active" : "flag-passive"}">
-          ${player.active ? "Aktif" : "Pasif"}
-        </span>
-        <span class="flag-pill ${player.playingToday ? "flag-active" : "flag-passive"}">
-          ${player.playingToday ? "Bugün Oynuyor" : "Bugün Yok"}
-        </span>
-        ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
-      </div>
-
-      <div class="player-stats">
-        Genel: ${player.overall} |
-        Şut: ${player.shot} |
-        Defans: ${player.defense} |
-        Pas: ${player.pass} |
-        Hız: ${player.speed} |
-        Dayanıklılık: ${player.stamina}
-      </div>
-
-      <div class="player-controls">
-        <label class="toggle-box">
-          <input type="checkbox" ${player.active ? "checked" : ""} onchange="togglePlayerActive(${index})" />
-          <span>Aktif</span>
-        </label>
-
-        <label class="toggle-box">
-          <input type="checkbox" ${player.playingToday ? "checked" : ""} onchange="togglePlayingToday(${index})" />
-          <span>Bugün Var</span>
-        </label>
-
-        <label class="toggle-box">
-          <input type="checkbox" ${player.isBench ? "checked" : ""} onchange="toggleBench(${index})" />
-          <span>Yedek</span>
-        </label>
-      </div>
-
-      <div class="player-actions">
-        <button class="edit-btn" onclick="editPlayer(${index})">Düzenle</button>
-        <button class="player-delete-btn" onclick="deletePlayer(${index})">Sil</button>
-      </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
 function editPlayer(index) {
+  if (!canEditRatings()) return;
+
   const p = players[index];
   document.getElementById("name").value = p.name;
   document.getElementById("position").value = p.position;
@@ -231,6 +532,7 @@ function editPlayer(index) {
 }
 
 async function deletePlayer(index) {
+  if (!isAdmin()) return;
   await deletePlayerFromFirestore(index);
   players.splice(index, 1);
   renderPlayers();
@@ -238,18 +540,24 @@ async function deletePlayer(index) {
 }
 
 async function togglePlayerActive(index) {
+  const player = players[index];
+  if (!canCurrentUserEditPlayer(player)) return;
   players[index].active = !players[index].active;
   await updatePlayerInFirestore(index);
   renderPlayers();
 }
 
 async function togglePlayingToday(index) {
+  const player = players[index];
+  if (!canCurrentUserEditPlayer(player)) return;
   players[index].playingToday = !players[index].playingToday;
   await updatePlayerInFirestore(index);
   renderPlayers();
 }
 
 async function toggleBench(index) {
+  const player = players[index];
+  if (!canCurrentUserEditPlayer(player)) return;
   players[index].isBench = !players[index].isBench;
   await updatePlayerInFirestore(index);
   renderPlayers();
@@ -416,11 +724,19 @@ function distributeSemiRandom(pool, teamSize) {
 }
 
 function getEligiblePlayers() {
-  return players.filter(p => p.active && p.playingToday && !p.isBench);
+  const visiblePlayers = isAdmin() || canEditRatings()
+    ? players
+    : players.filter(p => p.ownerUid === currentAuthUser?.uid);
+
+  return visiblePlayers.filter(p => p.active && p.playingToday && !p.isBench);
 }
 
 function getBenchPlayers() {
-  return players.filter(p => p.active && p.playingToday && p.isBench);
+  const visiblePlayers = isAdmin() || canEditRatings()
+    ? players
+    : players.filter(p => p.ownerUid === currentAuthUser?.uid);
+
+  return visiblePlayers.filter(p => p.active && p.playingToday && p.isBench);
 }
 
 function generateBestTeams(pool, teamSize, balanceMode, usePositionBalance, useGoalkeeperBalance) {
@@ -645,6 +961,11 @@ function swapPlayersBetweenTeams(fromTeam, fromIndex, toTeam) {
 playerForm.addEventListener("submit", async function (e) {
   e.preventDefault();
 
+  if (!canEditRatings()) {
+    alert("Bu işlem için yetkin yok.");
+    return;
+  }
+
   const player = getFormValues();
   if (!validatePlayer(player)) {
     alert("Lütfen tüm alanları doğru doldur.");
@@ -657,15 +978,20 @@ playerForm.addEventListener("submit", async function (e) {
     players[editIndex] = {
       ...players[editIndex],
       ...player,
+      ownerUid: players[editIndex].ownerUid,
       active: players[editIndex].active,
       playingToday: players[editIndex].playingToday,
       isBench: players[editIndex].isBench
     };
     await updatePlayerInFirestore(editIndex);
   } else {
-    const newPlayer = { ...player };
+    const newPlayer = {
+      ...player,
+      ownerUid: currentAuthUser.uid
+    };
+    const docRef = await addDoc(playersCollection, newPlayer);
+    newPlayer.id = docRef.id;
     players.push(newPlayer);
-    await saveNewPlayer(newPlayer);
   }
 
   renderPlayers();
@@ -673,10 +999,14 @@ playerForm.addEventListener("submit", async function (e) {
 });
 
 cancelEditBtn.addEventListener("click", resetForm);
-
 generateTeamsBtn.addEventListener("click", generateTeams);
 
 clearPlayersBtn.addEventListener("click", async function () {
+  if (!isAdmin()) {
+    alert("Bu işlem için admin yetkisi gerekir.");
+    return;
+  }
+
   const ok = confirm("Tüm oyuncuları silmek istediğine emin misin?");
   if (!ok) return;
 
@@ -692,12 +1022,42 @@ window.deletePlayer = deletePlayer;
 window.togglePlayerActive = togglePlayerActive;
 window.togglePlayingToday = togglePlayingToday;
 window.toggleBench = toggleBench;
+window.saveUserRole = saveUserRole;
 
-async function initApp() {
+async function bootLoggedInUser(firebaseUser) {
+  currentAuthUser = firebaseUser;
+  currentUserDoc = await getCurrentUserDoc(firebaseUser.uid);
+
+  if (!currentUserDoc) {
+    await signOut(auth);
+    return;
+  }
+
+  await loadUsers();
   await loadPlayers();
   await normalizeOldPlayers();
+
+  authScreen.style.display = "none";
+  appRoot.style.display = "block";
+
+  updateVisibilityByRole();
+  renderUsers();
   renderPlayers();
   clearResults();
 }
 
-initApp();
+function bootLoggedOutUser() {
+  currentAuthUser = null;
+  currentUserDoc = null;
+  authScreen.style.display = "block";
+  appRoot.style.display = "none";
+  openLogin();
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    await bootLoggedInUser(user);
+  } else {
+    bootLoggedOutUser();
+  }
+});
