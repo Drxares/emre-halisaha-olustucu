@@ -211,6 +211,7 @@ async function registerNewAccount(firstName, lastName, password, photoBase64) {
   await addDoc(playersCollection, {
     ownerUid: uid,
     name: fullName,
+    photo: photoBase64 || null,
     position: "Orta Saha",
     overall: 5,
     shot: 5,
@@ -478,23 +479,31 @@ function renderPlayers() {
     const showActions = editable;
 
     return `
-      <div class="player-item">
-        <div class="player-top">
-          <div class="player-left">
-            <div class="player-name">${player.name}</div>
-            <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
-          </div>
+  <div class="player-item">
+    <div class="player-top">
+      <div class="player-left">
+        <div class="player-avatar">
+          ${player.photo
+            ? `<img src="${player.photo}" alt="${player.name}" class="player-avatar-img">`
+            : `<div class="player-avatar-placeholder">${player.name.charAt(0).toUpperCase()}</div>`}
         </div>
 
-        <div class="player-flags">
-          <span class="flag-pill ${player.active ? 'flag-active' : 'flag-passive'}">
-            ${player.active ? 'Aktif' : 'Pasif'}
-          </span>
-          <span class="flag-pill ${player.playingToday ? 'flag-active' : 'flag-passive'}">
-            ${player.playingToday ? 'Bugün Oynuyor' : 'Bugün Yok'}
-          </span>
-          ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
+        <div class="player-main-info">
+          <div class="player-name">${player.name}</div>
+          <span class="position-badge ${getPositionBadgeClass(player.position)}">${player.position}</span>
         </div>
+      </div>
+    </div>
+
+    <div class="player-flags">
+      <span class="flag-pill ${player.active ? 'flag-active' : 'flag-passive'}">
+        ${player.active ? 'Aktif' : 'Pasif'}
+      </span>
+      <span class="flag-pill ${player.playingToday ? 'flag-active' : 'flag-passive'}">
+        ${player.playingToday ? 'Bugün Oynuyor' : 'Bugün Yok'}
+      </span>
+      ${player.isBench ? `<span class="flag-pill flag-bench">Yedek</span>` : ``}
+    </div>
 
         <div class="player-stats">
           Genel: ${player.overall} |
