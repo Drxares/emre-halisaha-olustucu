@@ -539,26 +539,9 @@ button.edit-btn:hover {
   font-weight: 700;
 }
 
-@media (max-width: 700px) {
-  .form-grid,
-  .settings-grid,
-  .teams-wrapper,
-  .meta-grid {
-    grid-template-columns: 1fr;
-  }
+/* ===== AUTH SCREEN ===== */
 
-  .player-controls {
-    grid-template-columns: 1fr;
-  }
-
-  .button-group {
-    flex-direction: column;
-  }
-
-  .button-group button {
-    width: 100%;
-  }
-  .auth-shell {
+.auth-shell {
   min-height: 100vh;
   align-items: center;
 }
@@ -684,6 +667,25 @@ button.edit-btn:hover {
 }
 
 @media (max-width: 700px) {
+  .form-grid,
+  .settings-grid,
+  .teams-wrapper,
+  .meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .player-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .button-group button {
+    width: 100%;
+  }
+
   .auth-card {
     padding: 16px;
     border-radius: 24px;
@@ -704,5 +706,4 @@ button.edit-btn:hover {
   .auth-brand p {
     font-size: 14px;
   }
-}
 }
