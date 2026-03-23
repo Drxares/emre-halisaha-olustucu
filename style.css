@@ -539,6 +539,46 @@ button.edit-btn:hover {
   font-weight: 700;
 }
 
+/* === Giriş ekranı küçük düzenleme === */
+
+#authScreen {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 12px;
+}
+
+#authScreen .mobile-frame {
+  max-width: 760px;
+  width: 100%;
+}
+
+#authScreen .hero,
+#authScreen .card {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#authScreen .button-group {
+  justify-content: flex-start;
+}
+
+#showLoginBtn,
+#showRegisterBtn {
+  min-width: 130px;
+}
+
+#loginForm,
+#registerForm {
+  margin-top: 10px;
+}
+
+#authMessage {
+  margin-top: 12px;
+}
+
 @media (max-width: 700px) {
   .form-grid,
   .settings-grid,
